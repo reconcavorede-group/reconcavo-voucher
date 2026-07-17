@@ -1,0 +1,18 @@
+project_id = "yzowyjaqwhjufdxiiujz"
+
+[functions.mikrotik]
+verify_jwt = false
+
+[functions.create-pix-payment]
+verify_jwt = false
+
+[functions.create-card-payment]
+verify_jwt = false
+
+[functions.create-preference]
+verify_jwt = false
+
+# O Mercado Pago não envia JWT; a autenticidade é garantida pela assinatura
+# x-signature validada dentro da função.
+[functions.mercadopago-webhook]
+verify_jwt = false

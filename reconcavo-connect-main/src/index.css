@@ -1,0 +1,106 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Recôncavo Voucher — Green palette */
+    --background: 140 30% 98%;
+    --foreground: 155 50% 10%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 155 50% 10%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 155 50% 10%;
+
+    /* Deep green primary */
+    --primary: 155 65% 22%;
+    --primary-foreground: 140 40% 98%;
+    --primary-glow: 150 70% 40%;
+
+    --secondary: 145 30% 93%;
+    --secondary-foreground: 155 55% 18%;
+
+    --muted: 145 25% 95%;
+    --muted-foreground: 150 12% 42%;
+
+    --accent: 90 80% 50%;
+    --accent-foreground: 155 60% 12%;
+
+    --success: 145 70% 38%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 38 95% 50%;
+    --warning-foreground: 155 60% 12%;
+
+    --destructive: 0 75% 55%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 145 20% 86%;
+    --input: 145 20% 86%;
+    --ring: 155 65% 22%;
+
+    --radius: 0.85rem;
+
+    --gradient-hero: linear-gradient(135deg, hsl(160 70% 14%) 0%, hsl(150 65% 30%) 50%, hsl(95 75% 50%) 100%);
+    --gradient-card: linear-gradient(160deg, hsl(0 0% 100%) 0%, hsl(145 30% 97%) 100%);
+    --gradient-primary: linear-gradient(135deg, hsl(160 65% 22%), hsl(140 70% 38%), hsl(95 80% 55%));
+
+    --shadow-elegant: 0 10px 40px -12px hsl(155 65% 22% / 0.3);
+    --shadow-card: 0 4px 20px -8px hsl(155 55% 20% / 0.18);
+    --shadow-glow: 0 0 50px hsl(95 80% 55% / 0.4);
+
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+    --sidebar-background: 160 55% 12%;
+    --sidebar-foreground: 140 35% 92%;
+    --sidebar-primary: 95 80% 55%;
+    --sidebar-primary-foreground: 155 60% 12%;
+    --sidebar-accent: 155 45% 20%;
+    --sidebar-accent-foreground: 140 40% 98%;
+    --sidebar-border: 155 45% 20%;
+    --sidebar-ring: 95 80% 55%;
+  }
+
+  .dark {
+    --background: 155 50% 7%;
+    --foreground: 140 35% 96%;
+    --card: 155 45% 11%;
+    --card-foreground: 140 35% 96%;
+    --popover: 155 45% 11%;
+    --popover-foreground: 140 35% 96%;
+    --primary: 95 80% 55%;
+    --primary-foreground: 155 60% 10%;
+    --secondary: 155 30% 18%;
+    --secondary-foreground: 140 35% 96%;
+    --muted: 155 30% 16%;
+    --muted-foreground: 145 18% 70%;
+    --accent: 95 80% 50%;
+    --accent-foreground: 155 60% 10%;
+    --destructive: 0 70% 50%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 155 30% 20%;
+    --input: 155 30% 20%;
+    --ring: 95 80% 55%;
+  }
+}
+
+@layer base {
+  * { @apply border-border; }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "cv11", "ss01";
+  }
+}
+
+@layer utilities {
+  .bg-gradient-hero { background: var(--gradient-hero); }
+  .bg-gradient-card { background: var(--gradient-card); }
+  .bg-gradient-primary { background: var(--gradient-primary); }
+  .shadow-elegant { box-shadow: var(--shadow-elegant); }
+  .shadow-card-soft { box-shadow: var(--shadow-card); }
+  .shadow-glow { box-shadow: var(--shadow-glow); }
+  .transition-smooth { transition: var(--transition-smooth); }
+  .text-balance { text-wrap: balance; }
+}
