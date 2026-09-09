@@ -1,73 +1,74 @@
-<!doctype html>
-<html lang="en">
+<!-- ============================================================================
+     Tela de login do hotspot — Recôncavo Voucher (INTEGRADA AO SITE)
+     Substitui flash/hotspot/login.html no MikroTik (upload via Winbox → Files).
+     Requer login-by=http-pap no profile do hotspot, e o site + Supabase + Mercado
+     Pago liberados no Walled Garden.
 
+     Comportamento: ao cair no captive portal, o cliente é REDIRECIONADO para o
+     site (reconcavo-voucher.vercel.app), onde compra OU digita o voucher.
+     O formulário abaixo é só um FALLBACK, caso o site esteja indisponível — ele
+     ainda autentica localmente no MikroTik via http-pap.
+     Mantém as variáveis do MikroTik: $(link-login-only), $(link-orig), $(error).
+============================================================================ -->
+<html>
 <head>
-    <meta charset="utf-8">
-    <meta http-equiv="pragma" content="no-cache" />
-    <meta http-equiv="expires" content="-1" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Internet hotspot - Log in</title>
-    <link rel="stylesheet" href="css/style.css">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Recôncavo Voucher — Wi-Fi</title>
+  <!-- Redireciona para o site. O site tem "comprar" e "já tenho voucher". -->
+  <meta http-equiv="refresh" content="0; url=https://reconcavo-voucher.vercel.app/">
+  <script>window.location.replace("https://reconcavo-voucher.vercel.app/");</script>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin:0; font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+           background:#0f3d2e; color:#fff; min-height:100vh;
+           display:flex; align-items:center; justify-content:center; padding:16px; }
+    .card { background:#fff; color:#0f172a; border-radius:16px; padding:24px; width:100%;
+            max-width:360px; box-shadow:0 10px 40px rgba(0,0,0,.25); }
+    .brand { display:flex; align-items:center; gap:10px; margin-bottom:10px; }
+    .brand .dot { width:40px; height:40px; display:flex; align-items:center; justify-content:center; }
+    .brand .dot img { width:100%; height:100%; object-fit:contain; }
+    h1 { font-size:18px; margin:0; }
+    p.sub { color:#64748b; font-size:13px; margin:2px 0 16px; }
+    .buy { display:block; text-align:center; text-decoration:none; background:#16a34a; color:#fff;
+           font-weight:700; padding:14px; border-radius:12px; font-size:16px; }
+    .divider { text-align:center; color:#94a3b8; font-size:12px; margin:16px 0; }
+    label { font-size:12px; color:#475569; display:block; margin-bottom:6px; }
+    input { width:100%; padding:12px; border:1px solid #cbd5e1; border-radius:10px; font-size:16px;
+            text-transform:uppercase; letter-spacing:1px; }
+    button { width:100%; margin-top:12px; padding:13px; border:0; border-radius:10px;
+             background:#0f3d2e; color:#fff; font-weight:700; font-size:16px; }
+    .err { background:#fef2f2; color:#b91c1c; border:1px solid #fecaca; padding:10px;
+           border-radius:10px; font-size:13px; margin-bottom:14px; }
+  </style>
 </head>
-
 <body>
-
-    <!-- two other colors
-
-<body class="lite">
-<body class="dark">
-
--->
-
-    $(if chap-id)
-    <form name="sendin" action="$(link-login-only)" method="post" style="display:none">
-        <input type="hidden" name="username" />
-        <input type="hidden" name="password" />
-        <input type="hidden" name="dst" value="$(link-orig)" />
-        <input type="hidden" name="popup" value="true" />
-    </form>
-
-    <script src="/md5.js"></script>
-    <script>
-        function doLogin() {
-            document.sendin.username.value = document.login.username.value;
-            document.sendin.password.value = hexMD5('$(chap-id)' + document.login.password.value + '$(chap-challenge)');
-            document.sendin.submit();
-            return false;
-        }
-
-    </script>
-    $(endif)
-    <div class="ie-fixMinHeight">
-        <div class="main">
-            <div class="wrap animated fadeIn">
-                <form name="login" action="$(link-login-only)" method="post" $(if chap-id) onSubmit="return doLogin()" $(endif)>
-                    <input type="hidden" name="dst" value="$(link-orig)" />
-                    <input type="hidden" name="popup" value="true" />
-                    <p class="info $(if error)alert$(endif)">
-                        $(if error == "")Please log in to use the internet hotspot service $(if trial == 'yes')<br />Free trial available, <a href="$(link-login-only)?dst=$(link-orig-esc)&amp;username=T-$(mac-esc)">click here</a>.$(endif)
-                        $(endif)
-
-                        $(if error)$(error)$(endif)
-                    </p>
-                    <label>
-                        <img class="ico" src="img/user.svg" alt="#" />
-                        <input name="username" type="text" value="$(username)" placeholder="Username" />
-                    </label>
-
-                    <label>
-                        <img class="ico" src="img/password.svg" alt="#" />
-                        <input name="password" type="password" placeholder="Password" />
-                    </label>
-
-                    <input type="submit" value="Connect" />
-
-                </form>
-                <p class="info bt">Powered by MikroTik RouterOS</p>
-
-            </div>
-        </div>
+  <!-- Só aparece se o redirecionamento não acontecer (site fora do ar / captive
+       browser sem JS). Ainda permite comprar e conectar. -->
+  <div class="card">
+    <div class="brand">
+      <div class="dot"><img src="https://reconcavo-voucher.vercel.app/logo.png" alt="RV"></div>
+      <div>
+        <h1>Recôncavo Voucher</h1>
+        <p class="sub" style="margin:0">Wi-Fi rápido por hora, dia ou mês</p>
+      </div>
     </div>
-</body>
 
+    $(if error)<div class="err">$(error)</div>$(endif)
+
+    <a class="buy" href="https://reconcavo-voucher.vercel.app/">Abrir site e comprar</a>
+
+    <div class="divider">— já tenho um código —</div>
+
+    <form name="login" action="$(link-login-only)" method="post"
+          onsubmit="document.login.password.value=document.login.username.value">
+      <input type="hidden" name="dst" value="$(link-orig)">
+      <input type="hidden" name="popup" value="true">
+      <input type="hidden" name="password" value="">
+      <label for="username">Código do voucher</label>
+      <input id="username" name="username" placeholder="REC-XXXX" autocapitalize="characters" autocomplete="off" required>
+      <button type="submit">Conectar</button>
+    </form>
+  </div>
+</body>
 </html>

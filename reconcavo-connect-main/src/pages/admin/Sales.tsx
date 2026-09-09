@@ -56,71 +56,78 @@ export default function Sales() {
 
   const count = (st: string) => sales.filter((s) => s.status === st).length;
 
+  const tabs: [typeof filter, string, number][] = [
+    ["all", "Todos", sales.length],
+    ["pending", "Pendentes", count("pending")],
+    ["completed", "Pagos", count("completed")],
+    ["no_stock", "Sem estoque", count("no_stock")],
+    ["failed", "Cancelados", count("failed")],
+  ];
+
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h2 className="text-2xl font-bold">Gestão de Vendas</h2>
-          <p className="text-sm text-muted-foreground">Pagamentos confirmados automaticamente pelo Mercado Pago</p>
+    <div className="space-y-5" style={{ animation: "fadeUp .3s ease" }}>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap gap-2">
+          {tabs.map(([val, label, n]) => (
+            <button key={val} onClick={() => setFilter(val)}
+              className={`rounded-full px-3.5 py-2 text-sm font-semibold transition ${
+                filter === val ? "bg-[#135B1D] text-white" : "border border-[#D8E9D3] bg-white text-[#49784C] hover:bg-[#E3F1DE]"
+              }`}>
+              {label} ({n})
+            </button>
+          ))}
         </div>
-        <Button onClick={exportCSV} variant="outline"><Download className="h-4 w-4" /> Exportar CSV</Button>
+        <button onClick={exportCSV}
+          className="flex items-center gap-1.5 rounded-xl border border-[#C9DFC0] bg-white px-3 py-2 text-sm font-semibold text-[#135B1D] transition hover:bg-[#E3F1DE]">
+          <Download className="h-4 w-4" /> Exportar CSV
+        </button>
       </div>
 
-      <Tabs value={filter} onValueChange={(v) => setFilter(v as typeof filter)}>
-        <TabsList>
-          <TabsTrigger value="all">Todos ({sales.length})</TabsTrigger>
-          <TabsTrigger value="pending">Pendentes ({count("pending")})</TabsTrigger>
-          <TabsTrigger value="completed">Pagos ({count("completed")})</TabsTrigger>
-          <TabsTrigger value="no_stock">Sem estoque ({count("no_stock")})</TabsTrigger>
-          <TabsTrigger value="failed">Cancelados ({count("failed")})</TabsTrigger>
-        </TabsList>
-      </Tabs>
-
-      <Card className="overflow-hidden">
+      <div className="overflow-hidden rounded-[20px] border-2 border-[#D8E9D3] bg-white">
         <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Data</TableHead>
-                <TableHead>Cliente</TableHead>
-                <TableHead>Plano</TableHead>
-                <TableHead>Valor</TableHead>
-                <TableHead>Método</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
+          <table className="w-full min-w-[640px] text-sm">
+            <thead>
+              <tr className="border-b border-[#D8E9D3] text-left text-xs uppercase tracking-wider text-[#6E9070]">
+                <th className="px-4 py-3 font-semibold">Data</th>
+                <th className="px-4 py-3 font-semibold">Cliente</th>
+                <th className="px-4 py-3 font-semibold">Plano</th>
+                <th className="px-4 py-3 font-semibold">Valor</th>
+                <th className="px-4 py-3 font-semibold">Método</th>
+                <th className="px-4 py-3 font-semibold">Status</th>
+                <th className="px-4 py-3 text-right font-semibold">Ações</th>
+              </tr>
+            </thead>
+            <tbody>
               {filtered.length === 0 && (
-                <TableRow><TableCell colSpan={7} className="text-center py-10 text-muted-foreground">Nenhuma venda</TableCell></TableRow>
+                <tr><td colSpan={7} className="py-10 text-center text-[#6E9070]">Nenhuma venda</td></tr>
               )}
               {filtered.map((s) => (
-                <TableRow key={s.id}>
-                  <TableCell className="text-sm">{new Date(s.created_at).toLocaleString("pt-BR")}</TableCell>
-                  <TableCell className="font-medium">{s.customer_name ?? "—"}</TableCell>
-                  <TableCell>{s.plan_name}</TableCell>
-                  <TableCell className="font-semibold">{formatBRL(Number(s.amount))}</TableCell>
-                  <TableCell className="uppercase text-xs">{s.payment_method}</TableCell>
-                  <TableCell><StatusBadge status={s.status} /></TableCell>
-                  <TableCell className="text-right">
-                    <Link to={`/order/${s.id}`} target="_blank"><Button size="sm" variant="ghost"><Eye className="h-4 w-4" /></Button></Link>
-                  </TableCell>
-                </TableRow>
+                <tr key={s.id} className="border-b border-[#EEF6EB] transition hover:bg-[#F7FBF4]">
+                  <td className="px-4 py-3 text-[#49784C]">{new Date(s.created_at).toLocaleString("pt-BR")}</td>
+                  <td className="px-4 py-3 font-medium text-[#152B14]">{s.customer_name ?? "—"}</td>
+                  <td className="px-4 py-3 text-[#152B14]">{s.plan_name}</td>
+                  <td className="px-4 py-3 font-semibold text-[#135B1D]">{formatBRL(Number(s.amount))}</td>
+                  <td className="px-4 py-3 text-xs uppercase text-[#49784C]">{s.payment_method}</td>
+                  <td className="px-4 py-3"><StatusBadge status={s.status} /></td>
+                  <td className="px-4 py-3 text-right">
+                    <Link to={`/order/${s.id}`} target="_blank" className="inline-flex rounded-lg p-2 text-[#135B1D] transition hover:bg-[#E3F1DE]"><Eye className="h-4 w-4" /></Link>
+                  </td>
+                </tr>
               ))}
-            </TableBody>
-          </Table>
+            </tbody>
+          </table>
         </div>
-      </Card>
+      </div>
     </div>
   );
 }
 
 function StatusBadge({ status }: { status: string }) {
   const map: Record<string, string> = {
-    pending: "bg-warning/15 text-warning border-warning/30",
-    completed: "bg-success/15 text-success border-success/30",
-    failed: "bg-destructive/15 text-destructive border-destructive/30",
-    no_stock: "bg-warning/15 text-warning border-warning/30",
+    pending: "bg-[#FFF8E6] text-[#8A6D1A] border-[#F0E2B6]",
+    completed: "bg-[#E3F5DC] text-[#1E6B26] border-[#C6E7BC]",
+    failed: "bg-[#FDEEEA] text-[#B4432E] border-[#F3C9BE]",
+    no_stock: "bg-[#FFF8E6] text-[#8A6D1A] border-[#F0E2B6]",
   };
-  return <Badge variant="outline" className={map[status]}>{statusLabel(status)}</Badge>;
+  return <span className={`rounded-full border px-2.5 py-0.5 text-xs font-semibold ${map[status] ?? ""}`}>{statusLabel(status)}</span>;
 }

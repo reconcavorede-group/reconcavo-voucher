@@ -60,66 +60,64 @@ export default function Dashboard() {
   }, []);
 
   const cards = [
-    { title: "Total de Vouchers", value: stats.totalVouchers, icon: Ticket, color: "from-primary to-primary-glow" },
-    { title: "Vouchers Ativos", value: stats.activeVouchers, icon: CheckCircle2, color: "from-success to-success" },
-    { title: "Receita Total", value: formatBRL(stats.revenue), icon: DollarSign, color: "from-accent to-accent" },
-    { title: "Pendentes", value: stats.pending, icon: Clock, color: "from-warning to-warning" },
+    { title: "Receita total", value: formatBRL(stats.revenue), icon: DollarSign, dark: true },
+    { title: "Total de vouchers", value: stats.totalVouchers, icon: Ticket, dark: false },
+    { title: "Vouchers vendidos", value: stats.activeVouchers, icon: CheckCircle2, dark: false },
+    { title: "Pendentes", value: stats.pending, icon: Clock, dark: false },
   ];
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div>
-        <h2 className="text-2xl font-bold text-foreground">Visão geral</h2>
-        <p className="text-sm text-muted-foreground">Acompanhe a operação em tempo real</p>
-      </div>
-
+    <div className="space-y-5" style={{ animation: "fadeUp .3s ease" }}>
       {noStockOrders > 0 && (
-        <Card className="p-4 border-destructive/40 bg-destructive/10 flex gap-3">
-          <PackageX className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
+        <div className="flex gap-3 rounded-2xl border border-[#F3C9BE] bg-[#FDEEEA] p-4">
+          <PackageX className="mt-0.5 h-5 w-5 shrink-0 text-[#B4432E]" />
           <div>
-            <p className="font-semibold text-foreground">{noStockOrders} pedido(s) pago(s) sem voucher disponível</p>
-            <p className="text-sm text-muted-foreground">Clientes pagaram mas não havia estoque. Gere e importe vouchers e atenda esses pedidos (aba Vendas → Sem estoque).</p>
+            <p className="font-semibold text-[#B4432E]">{noStockOrders} pedido(s) pago(s) sem voucher disponível</p>
+            <p className="text-sm text-[#B4432E]/80">Clientes pagaram mas não havia estoque. Gere e importe vouchers e atenda esses pedidos (aba Vendas → Sem estoque).</p>
           </div>
-        </Card>
+        </div>
       )}
 
       {lowStock.length > 0 && (
-        <Card className="p-4 border-warning/40 bg-warning/10 flex gap-3">
-          <AlertTriangle className="h-5 w-5 text-warning shrink-0 mt-0.5" />
+        <div className="flex gap-3 rounded-2xl border border-[#F0E2B6] bg-[#FFF8E6] p-4">
+          <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-[#8A6D1A]" />
           <div>
-            <p className="font-semibold text-foreground">Estoque disponível zerado</p>
-            <p className="text-sm text-muted-foreground">
+            <p className="font-semibold text-[#8A6D1A]">Estoque disponível zerado</p>
+            <p className="text-sm text-[#8A6D1A]/80">
               Sem vouchers <strong>disponíveis</strong> para: {lowStock.map((p) => p.plan_name).join(", ")}.
               Gere um lote, importe no MikroTik e confirme a importação.
             </p>
           </div>
-        </Card>
+        </div>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {cards.map((c) => (
-          <Card key={c.title} className="p-5 bg-gradient-card hover:shadow-card-soft transition-smooth">
+          <div key={c.title}
+            className={`rounded-[20px] border-2 p-5 transition hover:-translate-y-[3px] hover:shadow-brand-glow ${
+              c.dark ? "border-[#B4F04B] bg-[#135B1D]" : "border-[#D8E9D3] bg-white"
+            }`}>
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">{c.title}</p>
-                <p className="text-3xl font-extrabold text-foreground mt-2">{c.value}</p>
+                <p className={`text-xs font-semibold uppercase tracking-wider ${c.dark ? "text-[#B7E3B2]" : "text-[#6E9070]"}`}>{c.title}</p>
+                <p className={`mt-2 text-3xl font-extrabold ${c.dark ? "text-white" : "text-[#135B1D]"}`}>{c.value}</p>
               </div>
-              <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${c.color} flex items-center justify-center shadow-card-soft`}>
-                <c.icon className="h-5 w-5 text-white" />
-              </div>
+              <span className={`flex h-11 w-11 items-center justify-center rounded-xl ${c.dark ? "bg-[#B4F04B] text-[#135B1D]" : "bg-[#E9F4E5] text-[#1E8A2C]"}`}>
+                <c.icon className="h-5 w-5" />
+              </span>
             </div>
-          </Card>
+          </div>
         ))}
       </div>
 
-      <Card className="p-6 bg-gradient-card">
-        <div className="flex items-center gap-3 mb-2">
-          <TrendingUp className="h-5 w-5 text-success" />
-          <h3 className="font-semibold">Vendas de hoje</h3>
+      <div className="rounded-[20px] border-2 border-[#D8E9D3] bg-white p-6">
+        <div className="mb-2 flex items-center gap-2">
+          <TrendingUp className="h-5 w-5 text-[#1E8A2C]" />
+          <h3 className="font-bold text-[#135B1D]">Vendas de hoje</h3>
         </div>
-        <p className="text-4xl font-extrabold bg-gradient-primary bg-clip-text text-transparent">{formatBRL(stats.todaySales)}</p>
-        <p className="text-sm text-muted-foreground mt-1">Total faturado nas últimas 24h (após confirmação).</p>
-      </Card>
+        <p className="text-4xl font-extrabold text-[#1E8A2C]">{formatBRL(stats.todaySales)}</p>
+        <p className="mt-1 text-sm text-[#49784C]">Total faturado nas últimas 24h (após confirmação).</p>
+      </div>
     </div>
   );
 }

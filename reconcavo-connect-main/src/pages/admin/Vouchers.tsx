@@ -115,20 +115,16 @@ export default function Vouchers() {
   };
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div>
-        <h2 className="text-2xl font-bold">Gerador de Vouchers</h2>
-        <p className="text-sm text-muted-foreground">
-          Gere o lote → baixe o <code>.rsc</code> → importe no MikroTik → confirme a importação
-        </p>
-      </div>
-
-      <Card className="p-6 bg-gradient-card">
-        <div className="grid grid-cols-1 sm:grid-cols-[1fr_120px_auto] gap-4 items-end">
-          <div className="space-y-2">
-            <Label>Plano</Label>
+    <div className="space-y-5" style={{ animation: "fadeUp .3s ease" }}>
+      {/* Painel escuro: gerar lote */}
+      <div className="rounded-[20px] border border-[#3F9C45] bg-[#135B1D] p-6">
+        <h3 className="mb-1 font-bold text-white">Gerar novo lote</h3>
+        <p className="mb-4 text-sm text-[#B7E3B2]">Gere o lote → baixe o .rsc → importe no MikroTik → confirme a importação.</p>
+        <div className="grid grid-cols-1 items-end gap-4 sm:grid-cols-[1fr_120px_auto]">
+          <div className="space-y-1">
+            <label className="text-xs text-[#B7E3B2]">Plano</label>
             <Select value={planId} onValueChange={setPlanId}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectTrigger className="min-h-[44px] border-[#3F9C45] bg-[#1B6B24] text-white"><SelectValue /></SelectTrigger>
               <SelectContent>
                 {plans.map((p) => (
                   <SelectItem key={p.id} value={p.id}>{p.plan_name} — {formatBRL(Number(p.price))}</SelectItem>
@@ -136,55 +132,59 @@ export default function Vouchers() {
               </SelectContent>
             </Select>
           </div>
-          <div className="space-y-2">
-            <Label>Quantidade</Label>
-            <Input type="number" min={1} max={200} value={qty} onChange={(e) => setQty(parseInt(e.target.value) || 1)} />
+          <div className="space-y-1">
+            <label className="text-xs text-[#B7E3B2]">Quantidade</label>
+            <input type="number" min={1} max={200} value={qty} onChange={(e) => setQty(parseInt(e.target.value) || 1)}
+              className="min-h-[44px] w-full rounded-xl border border-[#3F9C45] bg-[#1B6B24] px-3 text-white focus:outline-none focus-visible:ring-[3px] focus-visible:ring-[#B4F04B]" />
           </div>
-          <Button onClick={handleGenerate} variant="hero" disabled={creating}>
+          <button onClick={handleGenerate} disabled={creating}
+            className="flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl bg-[#B4F04B] px-5 font-bold text-[#135B1D] transition hover:brightness-[1.06] disabled:opacity-60">
             {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />} Gerar lote
-          </Button>
+          </button>
         </div>
-      </Card>
+      </div>
 
       <div className="space-y-3">
-        <h3 className="font-semibold">Lotes ({batches.length})</h3>
+        <h3 className="font-bold text-[#135B1D]">Lotes ({batches.length})</h3>
         {batches.length === 0 && (
-          <Card className="p-8 text-center text-muted-foreground">Nenhum voucher gerado ainda</Card>
+          <div className="rounded-[20px] border-2 border-dashed border-[#D8E9D3] bg-white p-8 text-center text-[#6E9070]">Nenhum voucher gerado ainda</div>
         )}
         {batches.map((b) => {
           const gerados = b.vouchers.filter((v) => v.status === "gerado").length;
           const disponiveis = b.vouchers.filter((v) => v.status === "disponivel").length;
           const usados = b.vouchers.filter((v) => v.status === "active" || v.status === "expired").length;
           return (
-            <Card key={b.batchId ?? "avulsos"} className="p-4">
+            <div key={b.batchId ?? "avulsos"} className="rounded-[20px] border-2 border-[#D8E9D3] bg-white p-4">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-semibold">{b.planName}</span>
-                    <Badge variant="outline" className="text-xs">{b.vouchers.length} vouchers</Badge>
-                    {b.profile && <Badge variant="outline" className="text-xs font-mono">{b.profile}</Badge>}
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-lg font-extrabold text-[#135B1D]">{b.planName}</span>
+                    <span className="rounded-full border border-[#D8E9D3] px-2.5 py-0.5 text-xs text-[#49784C]">{b.vouchers.length} vouchers</span>
+                    {b.profile && <span className="rounded-full border border-[#D8E9D3] px-2.5 py-0.5 font-mono text-xs text-[#49784C]">{b.profile}</span>}
                   </div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {new Date(b.createdAt).toLocaleString("pt-BR")} • {formatDuration(b.vouchers[0]?.duration_minutes ?? 0)}
+                  <p className="mt-1 text-xs text-[#6E9070]">
+                    {new Date(b.createdAt).toLocaleString("pt-BR")} · {formatDuration(b.vouchers[0]?.duration_minutes ?? 0)}
                   </p>
-                  <div className="flex gap-2 mt-2 text-xs">
+                  <div className="mt-2 flex gap-2">
                     {gerados > 0 && <StatusBadge status="gerado" count={gerados} />}
                     {disponiveis > 0 && <StatusBadge status="disponivel" count={disponiveis} />}
                     {usados > 0 && <StatusBadge status="active" count={usados} />}
                   </div>
                 </div>
-                <div className="flex gap-2 shrink-0">
-                  <Button size="sm" variant="outline" onClick={() => downloadBatch(b)}>
-                    <Download className="h-4 w-4 mr-1" /> Baixar .rsc
-                  </Button>
+                <div className="flex shrink-0 gap-2">
+                  <button onClick={() => downloadBatch(b)}
+                    className="flex items-center gap-1.5 rounded-xl bg-[#135B1D] px-3 py-2 text-sm font-semibold text-white transition hover:brightness-[1.1]">
+                    <Download className="h-4 w-4" /> Baixar .rsc
+                  </button>
                   {gerados > 0 && (
-                    <Button size="sm" variant="success" onClick={() => confirmImport(b)}>
-                      <CheckCircle2 className="h-4 w-4 mr-1" /> Confirmar importação
-                    </Button>
+                    <button onClick={() => confirmImport(b)}
+                      className="flex items-center gap-1.5 rounded-xl bg-[#B4F04B] px-3 py-2 text-sm font-bold text-[#135B1D] transition hover:brightness-[1.06]">
+                      <CheckCircle2 className="h-4 w-4" /> Confirmar importação
+                    </button>
                   )}
                 </div>
               </div>
-            </Card>
+            </div>
           );
         })}
       </div>
@@ -194,9 +194,9 @@ export default function Vouchers() {
 
 function StatusBadge({ status, count }: { status: string; count: number }) {
   const map: Record<string, string> = {
-    gerado: "bg-warning/15 text-warning border-warning/30",
-    disponivel: "bg-secondary text-secondary-foreground",
-    active: "bg-success/15 text-success border-success/30",
+    gerado: "bg-[#FFF8E6] text-[#8A6D1A] border-[#F0E2B6]",
+    disponivel: "bg-[#E3F5DC] text-[#1E6B26] border-[#C6E7BC]",
+    active: "bg-[#E9F4E5] text-[#135B1D] border-[#D8E9D3]",
   };
-  return <Badge variant="outline" className={map[status]}>{count} {statusLabel(status).toLowerCase()}</Badge>;
+  return <span className={`rounded-full border px-2.5 py-0.5 text-xs font-semibold ${map[status] ?? ""}`}>{count} {statusLabel(status).toLowerCase()}</span>;
 }

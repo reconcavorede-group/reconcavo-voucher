@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  body { margin: 0; background: #F4F9F1; color: #152B14; font-family: 'Source Sans 3', system-ui, sans-serif; }
+  a { color: #1E8A2C; } a:hover { color: #135B1D; }
+  * { box-sizing: border-box; }
+  input::placeholder { color: #8FA98D; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes heroFlow { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+</style>
+</helmet>
+
+<header style="position: sticky; top: 0; z-index: 50; background: rgba(244,249,241,0.92); backdrop-filter: blur(8px); border-bottom: 1px solid #D8E9D3;">
+  <div style="max-width: 1080px; margin: 0 auto; padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <img src="uploads/logo.png" alt="Logo Recôncavo Voucher" style="width: 40px; height: 40px; object-fit: contain;">
+      <div style="line-height: 1.1;">
+        <div style="font-weight: 700; font-size: 16px; color: #135B1D;">Recôncavo</div>
+        <div style="font-weight: 500; font-size: 12px; letter-spacing: 2px; text-transform: uppercase; color: #49784C;">Admin</div>
+      </div>
+    </div>
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <a href="./Rec%C3%B4ncavo%20Voucher.dc.html" style="text-decoration: none; font-size: 14px; font-weight: 600; color: #1E8A2C; padding: 10px 14px; border-radius: 10px;" style-hover="background: #E3F1DE">Ver loja ↗</a>
+      <button style="border: 1px solid #C9DFC0; cursor: pointer; background: #FFFFFF; font-family: inherit; font-size: 14px; font-weight: 700; color: #135B1D; padding: 10px 16px; border-radius: 12px; min-height: 44px;" style-hover="background: #E3F1DE" style-focus="outline: 3px solid #1E8A2C">Sair</button>
+    </div>
+  </div>
+</header>
+
+<!-- FAIXA VERDE + NAV -->
+<section style="background: linear-gradient(120deg, #1E8A2C 0%, #3CAF44 45%, #1E8A2C 100%); background-size: 220% 220%; animation: heroFlow 9s ease-in-out infinite; color: #F4F9F1; padding: 36px 20px 72px;">
+  <div style="max-width: 1080px; margin: 0 auto; display: grid; gap: 18px;">
+    <div style="display: grid; gap: 6px;">
+      <h1 style="margin: 0; font-size: clamp(26px, 4vw, 34px); font-weight: 800; letter-spacing: -0.01em;">{{ pageTitle }}</h1>
+      <p style="margin: 0; font-size: 15px; color: #D8F0D4;">{{ pageSubtitle }}</p>
+    </div>
+    <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+      <sc-for list="{{ navItems }}" as="n" hint-placeholder-count="5">
+        <button onClick="{{ n.go }}" style="border: 1px solid {{ n.border }}; cursor: pointer; font-family: inherit; font-size: 14px; font-weight: 700; color: {{ n.color }}; background: {{ n.bg }}; padding: 11px 18px; border-radius: 999px; min-height: 44px;" style-hover="filter: brightness(1.06)" style-focus="outline: 3px solid #F4F9F1; outline-offset: 2px">{{ n.label }}</button>
+      </sc-for>
+    </div>
+  </div>
+</section>
+
+<main style="padding: 0 20px 72px; margin-top: -40px;">
+  <div style="max-width: 1080px; margin: 0 auto; display: grid; gap: 22px; animation: fadeUp .3s ease both;">
+
+    <!-- DASHBOARD -->
+    <sc-if value="{{ viewDashboard }}" hint-placeholder-val="{{ true }}">
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 18px;">
+        <sc-for list="{{ statCards }}" as="c" hint-placeholder-count="4">
+          <div style="background: {{ c.bg }}; border: 2px solid {{ c.border }}; border-radius: 20px; padding: 24px; display: grid; gap: 8px; transition: transform .15s ease, box-shadow .15s ease;" style-hover="transform: translateY(-3px); box-shadow: 0 0 0 3px rgba(60,175,68,0.35), 0 14px 34px rgba(30,138,44,0.35)">
+            <div style="font-size: 13px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: {{ c.titleColor }};">{{ c.title }}</div>
+            <div style="font-size: 34px; font-weight: 800; color: {{ c.valueColor }}; letter-spacing: -0.02em;">{{ c.value }}</div>
+            <div style="font-size: 13px; color: {{ c.titleColor }};">{{ c.hint }}</div>
+          </div>
+        </sc-for>
+      </div>
+      <div style="background: #FFF8E6; border: 1px solid #F0E2B6; border-radius: 16px; padding: 16px 20px; display: flex; gap: 12px; align-items: flex-start;">
+        <span style="font-size: 18px;">⚠️</span>
+        <div style="display: grid; gap: 3px;">
+          <div style="font-weight: 700; font-size: 15px; color: #135B1D;">Estoque disponível zerado</div>
+          <div style="font-size: 14px; color: #49784C; line-height: 1.5;">Sem vouchers disponíveis para: 2 horas, 24 horas, 7 dias e 30 dias. Gere um lote na aba <strong>Vouchers</strong>, importe no MikroTik e confirme.</div>
+        </div>
+      </div>
+      <div style="background: #FFFFFF; border: 2px solid #D8E9D3; border-radius: 20px; padding: 24px; display: grid; gap: 14px;">
+        <div style="font-weight: 800; font-size: 17px; color: #135B1D;">Vendas de hoje</div>
+        <div style="display: flex; align-items: flex-end; gap: 8px; height: 120px;">
+          <sc-for list="{{ todayBars }}" as="bar" hint-placeholder-count="12">
+            <div title="{{ bar.label }}" style="flex: 1; height: {{ bar.h }}; background: {{ bar.color }}; border-radius: 6px 6px 0 0; min-width: 10px;"></div>
+          </sc-for>
+        </div>
+        <div style="font-size: 14px; color: #49784C;">Faturado hoje (confirmado): <strong style="color: #135B1D;">R$ 59,00</strong> · pico entre 17h e 18h</div>
+      </div>
+    </sc-if>
+
+    <!-- VOUCHERS -->
+    <sc-if value="{{ viewVouchers }}" hint-placeholder-val="{{ false }}">
+      <div style="background: #135B1D; border-radius: 20px; padding: 28px 24px; display: grid; gap: 16px; color: #F4F9F1; box-shadow: 0 18px 44px rgba(19,91,29,0.28);">
+        <div style="display: grid; gap: 4px;">
+          <div style="font-weight: 800; font-size: 20px;">Gerar novo lote</div>
+          <div style="font-size: 14px; color: #D8F0D4;">Gere → baixe o .rsc → importe no MikroTik → confirme</div>
+        </div>
+        <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end;">
+          <div style="flex: 1 1 220px; display: grid; gap: 6px;">
+            <label for="gen-plan" style="font-size: 13px; font-weight: 700; color: #B7E3B2;">Plano</label>
+            <select id="gen-plan" value="{{ genPlan }}" onChange="{{ onGenPlan }}" style="width: 100%; min-height: 50px; border: 1px solid #3F9C45; border-radius: 12px; background: #1B6B24; color: #F4F9F1; font-size: 15px; font-family: inherit; padding: 0 12px;" style-focus="outline: 3px solid #B4F04B; outline-offset: 1px">
+              <option value="1h">1 hora — R$ 3,00</option>
+              <option value="2h">2 horas — R$ 5,00</option>
+              <option value="24h">24 horas — R$ 10,00</option>
+              <option value="7d">7 dias — R$ 25,00</option>
+              <option value="30d">30 dias — R$ 60,00</option>
+            </select>
+          </div>
+          <div style="width: 130px; display: grid; gap: 6px;">
+            <label for="gen-qty" style="font-size: 13px; font-weight: 700; color: #B7E3B2;">Quantidade</label>
+            <input id="gen-qty" value="{{ genQty }}" onChange="{{ onGenQty }}" inputMode="numeric" style="width: 100%; min-height: 50px; border: 1px solid #3F9C45; border-radius: 12px; background: #1B6B24; color: #F4F9F1; font-size: 15px; font-family: inherit; padding: 0 12px;" style-focus="outline: 3px solid #B4F04B; outline-offset: 1px">
+          </div>
+          <button onClick="{{ generate }}" style="border: none; cursor: pointer; font-family: inherit; background: #B4F04B; color: #135B1D; font-weight: 700; font-size: 16px; padding: 0 24px; min-height: 50px; border-radius: 12px;" style-hover="filter: brightness(1.06)" style-focus="outline: 3px solid #F4F9F1; outline-offset: 2px">Gerar lote</button>
+        </div>
+      </div>
+      <div style="font-weight: 800; font-size: 18px; color: #135B1D;">Lotes ({{ batchCount }})</div>
+      <div style="display: grid; gap: 14px;">
+        <sc-for list="{{ batches }}" as="b" hint-placeholder-count="3">
+          <div style="background: #FFFFFF; border: 2px solid #D8E9D3; border-radius: 20px; padding: 22px; display: flex; flex-wrap: wrap; gap: 14px; align-items: center; justify-content: space-between; transition: transform .15s ease, box-shadow .15s ease;" style-hover="transform: translateY(-2px); box-shadow: 0 0 0 3px rgba(60,175,68,0.25), 0 10px 26px rgba(30,138,44,0.22)">
+            <div style="display: grid; gap: 8px;">
+              <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px;">
+                <span style="font-weight: 800; font-size: 20px; color: #135B1D;">{{ b.plan }}</span>
+                <span style="background: #E3F1DE; color: #49784C; font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 999px;">{{ b.qty }} vouchers</span>
+                <span style="background: {{ b.statusBg }}; color: {{ b.statusColor }}; font-size: 12px; font-weight: 700; padding: 4px 12px; border-radius: 999px;">{{ b.status }}</span>
+              </div>
+              <div style="font-size: 13px; color: #6E9070;">{{ b.date }} · profile <code style="font-family: ui-monospace, monospace; background: #F4F9F1; padding: 1px 6px; border-radius: 6px;">{{ b.profile }}</code></div>
+            </div>
+            <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+              <sc-if value="{{ b.canConfirm }}" hint-placeholder-val="{{ false }}">
+                <button onClick="{{ b.confirm }}" style="border: none; cursor: pointer; background: #B4F04B; color: #135B1D; font-family: inherit; font-weight: 700; font-size: 14px; padding: 0 18px; min-height: 48px; border-radius: 12px;" style-hover="filter: brightness(1.06)" style-focus="outline: 3px solid #1E8A2C; outline-offset: 1px">✓ Confirmar importação</button>
+              </sc-if>
+              <button style="border: none; cursor: pointer; background: #135B1D; color: #F4F9F1; font-family: inherit; font-weight: 700; font-size: 14px; padding: 0 18px; min-height: 48px; border-radius: 12px;" style-hover="background: #1E8A2C" style-focus="outline: 3px solid #B4F04B; outline-offset: 1px">⬇ Baixar .rsc</button>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </sc-if>
+
+    <!-- VENDAS -->
+    <sc-if value="{{ viewSales }}" hint-placeholder-val="{{ false }}">
+      <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between;">
+        <div style="display: flex; flex-wrap: wrap; gap: 6px; background: #E3F1DE; border-radius: 999px; padding: 5px; width: fit-content;">
+          <sc-for list="{{ salesTabs }}" as="t" hint-placeholder-count="4">
+            <button onClick="{{ t.go }}" style="border: none; cursor: pointer; font-family: inherit; font-size: 14px; font-weight: 700; color: {{ t.color }}; background: {{ t.bg }}; padding: 9px 16px; border-radius: 999px; min-height: 40px;" style-hover="color: #135B1D" style-focus="outline: 2px solid #1E8A2C">{{ t.label }}</button>
+          </sc-for>
+        </div>
+        <button style="border: 1px solid #C9DFC0; cursor: pointer; background: #FFFFFF; color: #135B1D; font-family: inherit; font-weight: 700; font-size: 14px; padding: 0 18px; min-height: 46px; border-radius: 12px;" style-hover="background: #E3F1DE" style-focus="outline: 3px solid #1E8A2C">⬇ Exportar CSV</button>
+      </div>
+      <div style="background: #FFFFFF; border: 2px solid #D8E9D3; border-radius: 20px; overflow: hidden; overflow-x: auto;">
+        <div style="display: grid; grid-template-columns: 1.3fr 1fr 0.9fr 0.8fr 0.9fr; gap: 12px; padding: 14px 22px; background: #F4F9F1; border-bottom: 1px solid #D8E9D3; font-size: 12px; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase; color: #6E9070; min-width: 640px;">
+          <div>Data</div><div>Plano</div><div>Valor</div><div>Método</div><div>Status</div>
+        </div>
+        <sc-for list="{{ sales }}" as="s" hint-placeholder-count="6">
+          <div style="display: grid; grid-template-columns: 1.3fr 1fr 0.9fr 0.8fr 0.9fr; gap: 12px; padding: 16px 22px; border-bottom: 1px solid #F1FAEE; font-size: 14px; color: #152B14; align-items: center; min-width: 640px;" style-hover="background: #F7FBF4">
+            <div>{{ s.date }}</div>
+            <div style="font-weight: 600;">{{ s.plan }}</div>
+            <div style="font-weight: 700;">{{ s.value }}</div>
+            <div>{{ s.method }}</div>
+            <div><span style="background: {{ s.badgeBg }}; color: {{ s.badgeColor }}; font-size: 12px; font-weight: 700; padding: 4px 12px; border-radius: 999px;">{{ s.status }}</span></div>
+          </div>
+        </sc-for>
+      </div>
+    </sc-if>
+
+    <!-- PLANOS -->
+    <sc-if value="{{ viewPlans }}" hint-placeholder-val="{{ false }}">
+      <div style="background: #135B1D; border-radius: 20px; padding: 28px 24px; display: grid; gap: 16px; color: #F4F9F1; box-shadow: 0 18px 44px rgba(19,91,29,0.28);">
+        <div style="font-weight: 800; font-size: 20px;">Novo plano</div>
+        <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end;">
+          <div style="flex: 1 1 160px; display: grid; gap: 6px;">
+            <label for="np-nome" style="font-size: 13px; font-weight: 700; color: #B7E3B2;">Nome</label>
+            <input id="np-nome" placeholder="3 horas" style="width: 100%; min-height: 50px; border: 1px solid #3F9C45; border-radius: 12px; background: #1B6B24; color: #F4F9F1; font-size: 15px; font-family: inherit; padding: 0 12px;" style-focus="outline: 3px solid #B4F04B; outline-offset: 1px">
+          </div>
+          <div style="width: 110px; display: grid; gap: 6px;">
+            <label for="np-min" style="font-size: 13px; font-weight: 700; color: #B7E3B2;">Minutos</label>
+            <input id="np-min" placeholder="180" inputMode="numeric" style="width: 100%; min-height: 50px; border: 1px solid #3F9C45; border-radius: 12px; background: #1B6B24; color: #F4F9F1; font-size: 15px; font-family: inherit; padding: 0 12px;" style-focus="outline: 3px solid #B4F04B; outline-offset: 1px">
+          </div>
+          <div style="width: 110px; display: grid; gap: 6px;">
+            <label for="np-preco" style="font-size: 13px; font-weight: 700; color: #B7E3B2;">Preço (R$)</label>
+            <input id="np-preco" placeholder="7" inputMode="numeric" style="width: 100%; min-height: 50px; border: 1px solid #3F9C45; border-radius: 12px; background: #1B6B24; color: #F4F9F1; font-size: 15px; font-family: inherit; padding: 0 12px;" style-focus="outline: 3px solid #B4F04B; outline-offset: 1px">
+          </div>
+          <div style="flex: 1 1 160px; display: grid; gap: 6px;">
+            <label for="np-prof" style="font-size: 13px; font-weight: 700; color: #B7E3B2;">Profile MikroTik</label>
+            <input id="np-prof" placeholder="plano_3h" style="width: 100%; min-height: 50px; border: 1px solid #3F9C45; border-radius: 12px; background: #1B6B24; color: #F4F9F1; font-size: 15px; font-family: ui-monospace, monospace; padding: 0 12px;" style-focus="outline: 3px solid #B4F04B; outline-offset: 1px">
+          </div>
+          <button style="border: none; cursor: pointer; font-family: inherit; background: #B4F04B; color: #135B1D; font-weight: 700; font-size: 16px; padding: 0 22px; min-height: 50px; border-radius: 12px;" style-hover="filter: brightness(1.06)" style-focus="outline: 3px solid #F4F9F1; outline-offset: 2px">+ Adicionar</button>
+        </div>
+      </div>
+      <div style="display: grid; gap: 12px;">
+        <sc-for list="{{ adminPlans }}" as="p" hint-placeholder-count="5">
+          <div style="background: #FFFFFF; border: 2px solid #D8E9D3; border-radius: 20px; padding: 20px 24px; display: flex; flex-wrap: wrap; gap: 14px; align-items: center; justify-content: space-between; transition: transform .15s ease, box-shadow .15s ease;" style-hover="transform: translateY(-2px); box-shadow: 0 0 0 3px rgba(60,175,68,0.25), 0 10px 26px rgba(30,138,44,0.22)">
+            <div style="display: grid; gap: 3px; min-width: 140px;">
+              <div style="font-weight: 800; font-size: 20px; color: #135B1D;">{{ p.label }}</div>
+              <div style="font-size: 14px; color: #6E9070;">{{ p.minutes }} min · <strong style="color: #49784C;">R$ {{ p.price }},00</strong></div>
+            </div>
+            <code style="font-family: ui-monospace, monospace; font-size: 14px; color: #152B14; background: #F4F9F1; border: 1px solid #D8E9D3; border-radius: 10px; padding: 10px 14px;">{{ p.profile }}</code>
+            <div style="display: flex; align-items: center; gap: 14px;">
+              <span style="font-size: 13px; font-weight: 700; color: #6E9070;">Ativo</span>
+              <button onClick="{{ p.toggle }}" role="switch" aria-checked="{{ p.active }}" style="border: none; cursor: pointer; width: 52px; height: 30px; border-radius: 999px; background: {{ p.switchBg }}; position: relative; transition: background .15s;" style-focus="outline: 3px solid #1E8A2C; outline-offset: 2px">
+                <span style="position: absolute; top: 3px; left: {{ p.knobLeft }}; width: 24px; height: 24px; border-radius: 50%; background: #FFFFFF; transition: left .15s; box-shadow: 0 1px 3px rgba(0,0,0,0.25);"></span>
+              </button>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+      <div style="background: #E9F4E5; border-radius: 16px; padding: 18px 22px; display: grid; gap: 6px;">
+        <div style="font-weight: 700; font-size: 15px; color: #135B1D;">Pagamentos</div>
+        <div style="font-size: 14px; color: #49784C; line-height: 1.5;">Pix e cartão com confirmação automática via webhook do Mercado Pago. As chaves ficam em variáveis de ambiente, fora deste painel.</div>
+      </div>
+    </sc-if>
+
+    <!-- MIKROTIK -->
+    <sc-if value="{{ viewMikrotik }}" hint-placeholder-val="{{ false }}">
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px;">
+        <sc-for list="{{ mikrotikSteps }}" as="m" hint-placeholder-count="4">
+          <div style="background: #FFFFFF; border: 2px solid #D8E9D3; border-radius: 20px; padding: 24px; display: grid; gap: 10px; transition: transform .15s ease, box-shadow .15s ease;" style-hover="transform: translateY(-3px); box-shadow: 0 0 0 3px rgba(60,175,68,0.25), 0 10px 26px rgba(30,138,44,0.22)">
+            <div style="width: 36px; height: 36px; border-radius: 10px; background: #135B1D; color: #B4F04B; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 16px;">{{ m.n }}</div>
+            <div style="font-weight: 700; font-size: 17px; color: #135B1D;">{{ m.title }}</div>
+            <div style="font-size: 14px; line-height: 1.55; color: #49784C;">{{ m.desc }}</div>
+          </div>
+        </sc-for>
+      </div>
+    </sc-if>
+  </div>
+</main>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{}">
+class Component extends DCLogic {
+  state = {
+    view: 'dashboard', salesTab: 'todos',
+    genPlan: '1h', genQty: '10',
+    batches: [
+      { plan: '1 hora', qty: 10, profile: 'plano_1h', date: '17/07/2026, 16:21', status: 'gerado' },
+      { plan: '1 hora', qty: 1, profile: 'plano_1h', date: '16/07/2026, 15:13', status: 'disponivel' },
+      { plan: '2 horas', qty: 4, profile: 'plano_2h', date: '07/07/2026, 15:40', status: 'disponivel' },
+      { plan: '1 hora', qty: 10, profile: 'plano_1h', date: '07/07/2026, 04:36', status: 'disponivel' }
+    ],
+    plans: [
+      { id: '1h', label: '1 hora', minutes: 60, price: '3', profile: 'plano_1h', active: true },
+      { id: '2h', label: '2 horas', minutes: 120, price: '5', profile: 'plano_2h', active: true },
+      { id: '24h', label: '24 horas', minutes: 1440, price: '10', profile: 'plano_24h', active: true },
+      { id: '7d', label: '7 dias', minutes: 10080, price: '25', profile: 'plano_7d', active: true },
+      { id: '30d', label: '30 dias', minutes: 43200, price: '60', profile: 'plano_30d', active: true }
+    ]
+  };
+  SALES = [
+    { date: '22/07/2026, 14:42', plan: '1 hora', value: 'R$ 3,00', method: 'Pix', status: 'pendente' },
+    { date: '21/07/2026, 11:04', plan: '1 hora', value: 'R$ 3,00', method: 'Pix', status: 'cancelado' },
+    { date: '18/07/2026, 16:12', plan: '1 hora', value: 'R$ 3,00', method: 'Pix', status: 'cancelado' },
+    { date: '18/07/2026, 07:02', plan: '30 dias', value: 'R$ 60,00', method: 'Pix', status: 'cancelado' },
+    { date: '18/07/2026, 07:00', plan: '24 horas', value: 'R$ 10,00', method: 'Pix', status: 'cancelado' },
+    { date: '17/07/2026, 21:35', plan: '1 hora', value: 'R$ 3,00', method: 'Pix', status: 'pago' },
+    { date: '17/07/2026, 17:36', plan: '1 hora', value: 'R$ 3,00', method: 'Cartão', status: 'pago' },
+    { date: '17/07/2026, 17:31', plan: '1 hora', value: 'R$ 3,00', method: 'Pix', status: 'cancelado' },
+    { date: '16/07/2026, 15:02', plan: '24 horas', value: 'R$ 10,00', method: 'Cartão', status: 'pago' },
+    { date: '16/07/2026, 09:44', plan: '7 dias', value: 'R$ 25,00', method: 'Pix', status: 'pago' }
+  ];
+  TITLES = {
+    dashboard: ['Visão geral', 'Acompanhe vendas, estoque e receita em tempo real'],
+    vouchers: ['Vouchers', 'Gere lotes e controle o estoque disponível para venda'],
+    sales: ['Vendas', 'Pagamentos confirmados automaticamente pelo Mercado Pago'],
+    plans: ['Planos', 'Configure os planos exibidos na loja e o profile MikroTik'],
+    mikrotik: ['MikroTik', 'Passo a passo para importar os lotes no roteador']
+  };
+  renderVals() {
+    const s = this.state;
+    const PLAN_LABELS = { '1h': '1 hora', '2h': '2 horas', '24h': '24 horas', '7d': '7 dias', '30d': '30 dias' };
+    const nav = [
+      { id: 'dashboard', label: 'Dashboard' },
+      { id: 'vouchers', label: 'Vouchers' },
+      { id: 'sales', label: 'Vendas' },
+      { id: 'plans', label: 'Planos' },
+      { id: 'mikrotik', label: 'MikroTik' }
+    ];
+    const badge = st => st === 'pago' ? { bg: '#E3F5DC', color: '#1E6B26', label: 'Pago' }
+      : st === 'pendente' ? { bg: '#FFF8E6', color: '#8A6D1A', label: 'Pendente' }
+      : { bg: '#FDEEEA', color: '#B4432E', label: 'Cancelado' };
+    const tabs = [
+      { id: 'todos', label: 'Todos (' + this.SALES.length + ')' },
+      { id: 'pendente', label: 'Pendentes (' + this.SALES.filter(x => x.status === 'pendente').length + ')' },
+      { id: 'pago', label: 'Pagos (' + this.SALES.filter(x => x.status === 'pago').length + ')' },
+      { id: 'cancelado', label: 'Cancelados (' + this.SALES.filter(x => x.status === 'cancelado').length + ')' }
+    ];
+    const barsRaw = [8, 12, 6, 15, 20, 32, 26, 44, 60, 92, 100, 54];
+    return {
+      pageTitle: this.TITLES[s.view][0],
+      pageSubtitle: this.TITLES[s.view][1],
+      navItems: nav.map(n => ({
+        ...n,
+        bg: s.view === n.id ? '#B4F04B' : 'rgba(255,255,255,0.12)',
+        color: s.view === n.id ? '#135B1D' : '#F4F9F1',
+        border: s.view === n.id ? '#B4F04B' : 'rgba(255,255,255,0.3)',
+        go: () => this.setState({ view: n.id })
+      })),
+      viewDashboard: s.view === 'dashboard',
+      viewVouchers: s.view === 'vouchers',
+      viewSales: s.view === 'sales',
+      viewPlans: s.view === 'plans',
+      viewMikrotik: s.view === 'mikrotik',
+      statCards: [
+        { title: 'Receita total', value: 'R$ 59,00', hint: 'Após confirmação', bg: '#135B1D', border: '#B4F04B', titleColor: '#B7E3B2', valueColor: '#F4F9F1' },
+        { title: 'Total de vouchers', value: '25', hint: 'Em todos os lotes', bg: '#FFFFFF', border: '#D8E9D3', titleColor: '#6E9070', valueColor: '#135B1D' },
+        { title: 'Vouchers ativos', value: '17', hint: 'Disponíveis + em uso', bg: '#FFFFFF', border: '#D8E9D3', titleColor: '#6E9070', valueColor: '#135B1D' },
+        { title: 'Pendentes', value: '1', hint: 'Aguardando pagamento', bg: '#FFFFFF', border: '#D8E9D3', titleColor: '#6E9070', valueColor: '#135B1D' }
+      ],
+      todayBars: barsRaw.map((v, i) => ({
+        h: Math.round(v * 1.2) + 'px',
+        color: v === 100 ? '#B4F04B' : '#1E8A2C',
+        label: (8 + i) + 'h — ' + v + '%'
+      })),
+      genPlan: s.genPlan, genQty: s.genQty,
+      onGenPlan: e => this.setState({ genPlan: e.target.value }),
+      onGenQty: e => this.setState({ genQty: e.target.value.replace(/\D/g, '').slice(0, 3) }),
+      generate: () => {
+        const label = PLAN_LABELS[s.genPlan];
+        const qty = Math.max(1, parseInt(s.genQty || '1', 10));
+        const now = new Date();
+        const date = now.toLocaleDateString('pt-BR') + ', ' + now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+        this.setState(st => ({ batches: [{ plan: label, qty, profile: 'plano_' + s.genPlan, date, status: 'gerado' }, ...st.batches] }));
+      },
+      batchCount: s.batches.length,
+      batches: s.batches.map((b, i) => ({
+        ...b,
+        statusBg: b.status === 'gerado' ? '#FFF8E6' : '#E3F5DC',
+        statusColor: b.status === 'gerado' ? '#8A6D1A' : '#1E6B26',
+        status: b.status === 'gerado' ? 'aguardando importação' : 'disponível',
+        canConfirm: b.status === 'gerado',
+        confirm: () => this.setState(st => ({ batches: st.batches.map((x, j) => j === i ? { ...x, status: 'disponivel' } : x) }))
+      })),
+      salesTabs: tabs.map(t => ({
+        label: t.label,
+        bg: s.salesTab === t.id ? '#FFFFFF' : 'transparent',
+        color: s.salesTab === t.id ? '#135B1D' : '#6E9070',
+        go: () => this.setState({ salesTab: t.id })
+      })),
+      sales: this.SALES.filter(x => s.salesTab === 'todos' || x.status === s.salesTab).map(x => {
+        const b = badge(x.status);
+        return { ...x, status: b.label, badgeBg: b.bg, badgeColor: b.color };
+      }),
+      adminPlans: s.plans.map((p, i) => ({
+        ...p,
+        switchBg: p.active ? '#1E8A2C' : '#C9DFC0',
+        knobLeft: p.active ? '25px' : '3px',
+        toggle: () => this.setState(st => ({ plans: st.plans.map((x, j) => j === i ? { ...x, active: !x.active } : x) }))
+      })),
+      mikrotikSteps: [
+        { n: '1', title: 'Gere o lote', desc: 'Na aba Vouchers, escolha o plano e a quantidade. Os códigos nascem com status "aguardando importação".' },
+        { n: '2', title: 'Baixe o .rsc', desc: 'Cada lote gera um script pronto com os usuários do Hotspot (código único como usuário e senha).' },
+        { n: '3', title: 'Importe no roteador', desc: 'No Winbox/WebFig, abra Files, envie o .rsc e rode "/import" no terminal do MikroTik.' },
+        { n: '4', title: 'Confirme a importação', desc: 'De volta ao painel, clique em "Confirmar importação" — os vouchers ficam disponíveis na loja.' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

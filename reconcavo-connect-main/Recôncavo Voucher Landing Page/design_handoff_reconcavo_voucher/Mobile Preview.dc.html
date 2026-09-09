@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  body { margin: 0; background: #0E2010; min-height: 100vh; font-family: 'Source Sans 3', system-ui, sans-serif; }
+  a { color: #B4F04B; } a:hover { color: #D9F45C; }
+</style>
+</helmet>
+<div style="min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; padding: 40px 16px;">
+  <div style="display: grid; gap: 4px; text-align: center;">
+    <div style="font-size: 18px; font-weight: 700; color: #F4F7F3;">Demonstração mobile</div>
+    <div style="font-size: 13px; color: #8AA396;">A landing page real rodando em uma tela de celular — navegue normalmente.</div>
+  </div>
+  <x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx" dark="{{ true }}" hint-size="402px,874px">
+    <div style="width: 100%; height: 100%; padding-top: 60px; box-sizing: border-box; background: #1E8A2C;">
+      <iframe src="./Rec%C3%B4ncavo%20Voucher.dc.html" title="Recôncavo Voucher no mobile" style="width: 100%; height: 100%; border: none; display: block; background: #F4F9F1;"></iframe>
+    </div>
+  </x-import>
+  <a href="./Rec%C3%B4ncavo%20Voucher.dc.html" style="font-size: 13px; text-decoration: none;" style-hover="text-decoration: underline">Abrir versão completa →</a>
+</div>
+
+</x-dc>
+</body>
+</html>

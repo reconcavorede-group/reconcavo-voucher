@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  html { scroll-behavior: smooth; }
+  body { margin: 0; background: #F4F9F1; color: #152B14; font-family: 'Source Sans 3', system-ui, sans-serif; }
+  a { color: #1E8A2C; } a:hover { color: #135B1D; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes heroFlow { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+  * { box-sizing: border-box; }
+  input::placeholder { color: #8FA98D; }
+</style>
+</helmet>
+
+<header style="position: sticky; top: 0; z-index: 50; background: rgba(244,249,241,0.92); backdrop-filter: blur(8px); border-bottom: 1px solid #D8E9D3;">
+  <div style="max-width: 1080px; margin: 0 auto; padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+    <a href="#" style="display: flex; align-items: center; gap: 10px; text-decoration: none;">
+      <img src="uploads/logo.png" alt="Logo Recôncavo Voucher" style="width: 40px; height: 40px; object-fit: contain;">
+      <div style="line-height: 1.1;">
+        <div style="font-weight: 700; font-size: 16px; color: #135B1D;">Recôncavo</div>
+        <div style="font-weight: 500; font-size: 12px; letter-spacing: 2px; text-transform: uppercase; color: #49784C;">Voucher</div>
+      </div>
+    </a>
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <a href="#conectar" style="text-decoration: none; font-size: 14px; font-weight: 600; color: #1E8A2C; padding: 10px 14px; border-radius: 10px;" style-hover="background: #E3F1DE;">Já tenho voucher</a>
+      <a href="#planos" style="text-decoration: none; font-size: 14px; font-weight: 700; color: #135B1D; background: {{ accent }}; padding: 12px 18px; border-radius: 12px;" style-hover="filter: brightness(1.06)">Ver planos</a>
+    </div>
+  </div>
+</header>
+
+<main>
+  <!-- HERO -->
+  <section style="background: linear-gradient(120deg, #1E8A2C 0%, #3CAF44 45%, #1E8A2C 100%); background-size: 220% 220%; animation: heroFlow 9s ease-in-out infinite; color: #F4F9F1; padding: 64px 20px 88px;">
+    <div style="max-width: 1080px; margin: 0 auto; display: grid; gap: 32px;">
+      <div style="max-width: 640px; display: grid; gap: 20px; animation: fadeUp .5s ease both;">
+        <div style="display: inline-flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.18); border-radius: 999px; padding: 6px 14px; font-size: 13px; font-weight: 500; width: fit-content;">
+          <span style="width: 8px; height: 8px; border-radius: 50%; background: {{ accent }};"></span>
+          Ativação automática em segundos
+        </div>
+        <h1 style="margin: 0; font-size: clamp(32px, 6vw, 52px); line-height: 1.1; font-weight: 800; letter-spacing: -0.02em;">Internet Wi-Fi agora.<br>Do seu jeito, pelo tempo <span style="color: {{ accent }};">que você precisar</span>.</h1>
+        <p style="margin: 0; font-size: clamp(16px, 2.5vw, 19px); line-height: 1.55; color: #D8F0D4; max-width: 480px; text-wrap: pretty;">Escolha um plano, pague por Pix ou cartão e receba seu código na hora. Sem cadastro, sem espera.</p>
+        <div style="display: flex; flex-wrap: wrap; gap: 12px; margin-top: 4px;">
+          <a href="#planos" style="text-decoration: none; background: {{ accent }}; color: #135B1D; font-weight: 700; font-size: 17px; padding: 16px 28px; border-radius: 14px; min-height: 44px; display: inline-flex; align-items: center;" style-hover="filter: brightness(1.06); transform: translateY(-1px)">Escolher meu plano</a>
+          <a href="#conectar" style="text-decoration: none; color: #F4F9F1; font-weight: 600; font-size: 16px; padding: 16px 20px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.3); min-height: 44px; display: inline-flex; align-items: center;" style-hover="background: rgba(255,255,255,0.08)">Já tenho um código</a>
+        </div>
+        <div style="display: flex; flex-wrap: wrap; gap: 18px; margin-top: 8px; font-size: 13px; color: #B7E3B2;">
+          <span style="display: flex; align-items: center; gap: 6px;"><span style="color: {{ accent }};">✓</span> Pagamento seguro</span>
+          <span style="display: flex; align-items: center; gap: 6px;"><span style="color: {{ accent }};">✓</span> Confirmação automática</span>
+          <span style="display: flex; align-items: center; gap: 6px;"><span style="color: {{ accent }};">✓</span> Sinal estável 24h</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- JÁ TENHO VOUCHER -->
+  <section id="conectar" style="padding: 0 20px; margin-top: -44px; position: relative; z-index: 2;">
+    <div style="max-width: 720px; margin: 0 auto; background: #135B1D; border: 1px solid #3F9C45; box-shadow: 0 18px 44px rgba(19,91,29,0.28); border-radius: 22px; padding: 36px 28px; display: grid; gap: 16px; color: #F4F9F1;">
+      <h2 style="margin: 0; font-size: 24px; font-weight: 800;">Já tem um voucher?</h2>
+      <p style="margin: 0; font-size: 15px; color: #D8F0D4;">Digite o código que você recebeu e conecte agora.</p>
+      <sc-if value="{{ notConnected }}" hint-placeholder-val="{{ true }}">
+        <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+          <input value="{{ voucherInput }}" onChange="{{ onVoucherInput }}" placeholder="Ex.: REC-7K2M9Q" spellcheck="false" style="flex: 1 1 200px; min-height: 50px; border: 1px solid #3F9C45; border-radius: 12px; background: #1B6B24; color: #F4F9F1; font-family: ui-monospace, monospace; font-size: 16px; letter-spacing: 1px; padding: 0 16px;" style-focus="outline: 3px solid {{ accent }}; outline-offset: 1px">
+          <button onClick="{{ connect }}" disabled="{{ connecting }}" style="border: none; cursor: pointer; font-family: inherit; background: {{ accent }}; color: #135B1D; font-weight: 700; font-size: 16px; padding: 0 24px; min-height: 50px; border-radius: 12px;" style-hover="filter: brightness(1.06)" style-focus="outline: 3px solid #F4F9F1; outline-offset: 2px">{{ connectLabel }}</button>
+        </div>
+        <sc-if value="{{ voucherError }}" hint-placeholder-val="{{ false }}">
+          <div style="font-size: 14px; color: #FFB4A2;">{{ voucherError }}</div>
+        </sc-if>
+      </sc-if>
+      <sc-if value="{{ connected }}" hint-placeholder-val="{{ false }}">
+        <div style="background: #1B6B24; border: 1px solid {{ accent }}; border-radius: 14px; padding: 18px; display: grid; gap: 6px; animation: fadeUp .3s ease both;">
+          <div style="font-weight: 700; font-size: 17px; color: {{ accent }};">✓ Você está conectado!</div>
+          <div style="font-size: 14px; color: #D8F0D4;">Voucher ativado. Aproveite sua internet.</div>
+        </div>
+      </sc-if>
+    </div>
+  </section>
+
+  <!-- PLANOS -->
+  <section id="planos" style="padding: 64px 20px 72px;">
+    <div style="max-width: 1080px; margin: 0 auto; display: grid; gap: 28px;">
+      <div style="display: grid; gap: 8px;">
+        <h2 style="margin: 0; font-size: clamp(24px, 4vw, 32px); font-weight: 800; color: #135B1D; letter-spacing: -0.01em;">Escolha quanto tempo você precisa</h2>
+        <p style="margin: 0; font-size: 16px; color: #49784C;">Todos com a mesma velocidade. Toque em um plano para ver o valor e pagar.</p>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 18px; align-items: stretch;">
+        <sc-for list="{{ plans }}" as="p" hint-placeholder-count="5">
+          <div style="position: relative; background: {{ p.bg }}; border: 2px solid {{ p.border }}; border-radius: 20px; padding: 32px 24px 24px; display: flex; flex-direction: column; gap: 12px; transition: transform .15s ease, box-shadow .15s ease;" style-hover="transform: translateY(-3px); box-shadow: 0 0 0 3px rgba(60,175,68,0.35), 0 14px 34px rgba(30,138,44,0.35)">
+            <sc-if value="{{ p.featured }}" hint-placeholder-val="{{ false }}">
+              <div style="position: absolute; top: -12px; left: 50%; transform: translateX(-50%); background: #135B1D; color: {{ accent }}; font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; padding: 5px 12px; border-radius: 999px; white-space: nowrap;">★ Mais vendido</div>
+            </sc-if>
+            <div style="font-size: 42px; font-weight: 800; color: {{ p.priceColor }}; letter-spacing: -0.02em; line-height: 1.1;">{{ p.label }}</div>
+            <div style="font-size: 14px; color: {{ p.subColor }}; line-height: 1.4;">{{ p.desc }}</div>
+            <div style="display: grid; gap: 7px; padding: 12px 0 14px; border-top: 1px solid {{ p.divider }}; margin-top: 4px;">
+              <sc-for list="{{ p.perks }}" as="perk" hint-placeholder-count="3">
+                <div style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: {{ p.subColor }};"><span style="color: {{ p.checkColor }}; font-weight: 700;">✓</span> {{ perk }}</div>
+              </sc-for>
+            </div>
+            <button onClick="{{ p.buy }}" style="margin-top: auto; border: none; cursor: pointer; font-family: inherit; background: {{ p.btnBg }}; color: {{ p.btnColor }}; font-weight: 700; font-size: 16px; padding: 15px 12px; border-radius: 12px; min-height: 52px; transition: filter .1s;" style-hover="filter: brightness(1.08)" style-focus="outline: 3px solid #1E8A2C; outline-offset: 2px" style-active="transform: scale(0.98)">{{ p.cta }}</button>
+          </div>
+        </sc-for>
+      </div>
+      <p style="margin: 0; text-align: center; font-size: 13px; color: #6E9070;">Pix ou cartão · confirmação automática · código entregue na tela e por SMS se quiser</p>
+    </div>
+  </section>
+
+  <!-- COMO FUNCIONA -->
+  <section style="background: #E9F4E5; padding: 56px 20px;">
+    <div style="max-width: 1080px; margin: 0 auto; display: grid; gap: 28px;">
+      <h2 style="margin: 0; font-size: clamp(22px, 3.5vw, 28px); font-weight: 800; color: #135B1D;">Conectado em 3 passos</h2>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px;">
+        <sc-for list="{{ steps }}" as="s" hint-placeholder-count="3">
+          <div style="background: #FFFFFF; border-radius: 16px; padding: 22px; display: grid; gap: 10px;">
+            <div style="width: 36px; height: 36px; border-radius: 10px; background: #135B1D; color: {{ accent }}; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 16px;">{{ s.n }}</div>
+            <div style="font-weight: 700; font-size: 17px; color: #135B1D;">{{ s.title }}</div>
+            <div style="font-size: 14px; line-height: 1.5; color: #49784C;">{{ s.desc }}</div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section style="padding: 8px 20px 72px;">
+    <div style="max-width: 720px; margin: 0 auto; display: grid; gap: 18px;">
+      <h2 style="margin: 0; font-size: clamp(22px, 3.5vw, 28px); font-weight: 800; color: #135B1D;">Perguntas frequentes</h2>
+      <sc-for list="{{ faqs }}" as="f" hint-placeholder-count="4">
+        <details style="background: #FFFFFF; border: 1px solid #D8E9D3; border-radius: 14px; padding: 16px 20px;">
+          <summary style="cursor: pointer; font-weight: 600; font-size: 15px; color: #135B1D; min-height: 24px;">{{ f.q }}</summary>
+          <p style="margin: 10px 0 0; font-size: 14px; line-height: 1.6; color: #49784C;">{{ f.a }}</p>
+        </details>
+      </sc-for>
+    </div>
+  </section>
+</main>
+
+<footer style="background: #135B1D; color: #B7E3B2; padding: 28px 20px;">
+  <div style="max-width: 1080px; margin: 0 auto; display: flex; flex-wrap: wrap; gap: 16px; align-items: center; justify-content: space-between; font-size: 13px;">
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <img src="uploads/logo.png" alt="" style="width: 28px; height: 28px; object-fit: contain; background: #F4F9F1; border-radius: 8px; padding: 3px;">
+      <span>Recôncavo Voucher © 2026</span>
+    </div>
+    <span>Pagamento processado com segurança · Suporte via WhatsApp</span>
+  </div>
+</footer>
+
+<!-- CHECKOUT MODAL -->
+<sc-if value="{{ modalOpen }}" hint-placeholder-val="{{ false }}">
+  <div onClick="{{ closeModal }}" style="position: fixed; inset: 0; z-index: 100; background: rgba(16,42,15,0.55); backdrop-filter: blur(3px); display: flex; align-items: flex-end; justify-content: center; padding: 0;">
+    <div onClick="{{ stop }}" style="background: #FFFFFF; width: 100%; max-width: 480px; border-radius: 22px 22px 0 0; padding: 24px 24px 32px; display: grid; gap: 18px; max-height: 92vh; overflow-y: auto; animation: fadeUp .25s ease both;">
+      <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+        <div style="display: grid; gap: 2px;">
+          <div style="font-size: 13px; font-weight: 600; color: #6E9070; text-transform: uppercase; letter-spacing: 0.05em;">{{ modalKicker }}</div>
+          <div style="font-size: 20px; font-weight: 800; color: #135B1D;">{{ modalTitle }}</div>
+        </div>
+        <button onClick="{{ closeModal }}" aria-label="Fechar" style="border: none; cursor: pointer; background: #E9F4E5; color: #135B1D; width: 40px; height: 40px; border-radius: 50%; font-size: 18px; font-family: inherit;" style-hover="background: #D8E9D3" style-focus="outline: 3px solid #1E8A2C">✕</button>
+      </div>
+
+      <!-- resumo do plano -->
+      <div style="background: #E9F4E5; border-radius: 14px; padding: 14px 16px; display: flex; align-items: center; justify-content: space-between;">
+        <div style="font-weight: 600; font-size: 15px; color: #135B1D;">{{ selLabel }} de internet</div>
+        <div style="font-weight: 800; font-size: 18px; color: #135B1D;">R$ {{ selPrice }}</div>
+      </div>
+
+      <!-- passo 1: forma de pagamento -->
+      <sc-if value="{{ stepPay }}" hint-placeholder-val="{{ true }}">
+        <div style="display: grid; gap: 10px;">
+          <button onClick="{{ choosePix }}" style="border: 2px solid #D8E9D3; cursor: pointer; background: #FFFFFF; border-radius: 14px; padding: 16px; display: flex; align-items: center; gap: 14px; font-family: inherit; text-align: left; min-height: 44px;" style-hover="border-color: #1E8A2C; background: #F1FAEE" style-focus="outline: 3px solid #1E8A2C; outline-offset: 1px">
+            <div style="width: 44px; height: 44px; border-radius: 12px; background: {{ accent }}; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 13px; color: #135B1D;">PIX</div>
+            <div style="display: grid; gap: 2px;">
+              <div style="font-weight: 700; font-size: 16px; color: #135B1D;">Pagar com Pix</div>
+              <div style="font-size: 13px; color: #49784C;">Confirmação automática na hora</div>
+            </div>
+            <div style="margin-left: auto; color: #6E9070; font-size: 18px;">›</div>
+          </button>
+          <button onClick="{{ chooseCard }}" style="border: 2px solid #D8E9D3; cursor: pointer; background: #FFFFFF; border-radius: 14px; padding: 16px; display: flex; align-items: center; gap: 14px; font-family: inherit; text-align: left; min-height: 44px;" style-hover="border-color: #1E8A2C; background: #F1FAEE" style-focus="outline: 3px solid #1E8A2C; outline-offset: 1px">
+            <div style="width: 44px; height: 44px; border-radius: 12px; background: #135B1D; display: flex; align-items: center; justify-content: center; font-size: 20px; color: #F4F9F1;">💳</div>
+            <div style="display: grid; gap: 2px;">
+              <div style="font-weight: 700; font-size: 16px; color: #135B1D;">Pagar com cartão</div>
+              <div style="font-size: 13px; color: #49784C;">Crédito ou débito</div>
+            </div>
+            <div style="margin-left: auto; color: #6E9070; font-size: 18px;">›</div>
+          </button>
+        </div>
+        <div style="font-size: 12px; color: #6E9070; text-align: center;">🔒 Pagamento seguro e criptografado</div>
+      </sc-if>
+
+      <!-- passo 2a: pix -->
+      <sc-if value="{{ stepPix }}" hint-placeholder-val="{{ false }}">
+        <div style="display: grid; gap: 14px; justify-items: center;">
+          <div style="width: 180px; height: 180px; border-radius: 14px; border: 1px solid #D8E9D3; background: repeating-linear-gradient(45deg, #F4F9F1, #F4F9F1 8px, #E9F4E5 8px, #E9F4E5 16px); display: flex; align-items: center; justify-content: center;">
+            <span style="font-family: ui-monospace, monospace; font-size: 12px; color: #6E9070; background: #FFFFFF; padding: 4px 8px; border-radius: 6px;">QR code Pix</span>
+          </div>
+          <div style="width: 100%; display: grid; gap: 8px;">
+            <div style="font-size: 13px; font-weight: 600; color: #49784C;">Ou copie o código Pix:</div>
+            <div style="display: flex; gap: 8px;">
+              <div style="flex: 1; background: #F4F9F1; border: 1px solid #D8E9D3; border-radius: 10px; padding: 12px; font-family: ui-monospace, monospace; font-size: 12px; color: #152B14; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ pixCode }}</div>
+              <button onClick="{{ copyPix }}" style="border: none; cursor: pointer; background: #135B1D; color: #F4F9F1; font-family: inherit; font-weight: 600; font-size: 13px; padding: 0 16px; border-radius: 10px; min-height: 44px;" style-hover="background: #1E8A2C" style-focus="outline: 3px solid {{ accent }}">{{ pixCopyLabel }}</button>
+            </div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 10px; background: #FFF8E6; border: 1px solid #F0E2B6; border-radius: 12px; padding: 12px 16px; width: 100%;">
+            <div style="width: 18px; height: 18px; border: 3px solid #E0C860; border-top-color: transparent; border-radius: 50%; animation: spin 1s linear infinite; flex-shrink: 0;"></div>
+            <div style="font-size: 13px; color: #7A6420;">Aguardando pagamento… a confirmação é automática, não feche esta tela.</div>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- passo 2b: cartão -->
+      <sc-if value="{{ stepCard }}" hint-placeholder-val="{{ false }}">
+        <div style="display: grid; gap: 12px;">
+          <div style="display: grid; gap: 6px;">
+            <label for="cc-num" style="font-size: 13px; font-weight: 600; color: #49784C;">Número do cartão</label>
+            <input id="cc-num" value="{{ ccNum }}" onChange="{{ onCcNum }}" inputMode="numeric" placeholder="0000 0000 0000 0000" style="min-height: 50px; border: 1px solid #D8E9D3; border-radius: 12px; padding: 0 14px; font-size: 16px; font-family: ui-monospace, monospace; color: #152B14; background: #FFFFFF;" style-focus="outline: 3px solid #1E8A2C; outline-offset: 1px">
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <div style="display: grid; gap: 6px;">
+              <label for="cc-val" style="font-size: 13px; font-weight: 600; color: #49784C;">Validade</label>
+              <input id="cc-val" value="{{ ccExp }}" onChange="{{ onCcExp }}" inputMode="numeric" placeholder="MM/AA" style="min-height: 50px; border: 1px solid #D8E9D3; border-radius: 12px; padding: 0 14px; font-size: 16px; font-family: ui-monospace, monospace; color: #152B14; background: #FFFFFF;" style-focus="outline: 3px solid #1E8A2C; outline-offset: 1px">
+            </div>
+            <div style="display: grid; gap: 6px;">
+              <label for="cc-cvv" style="font-size: 13px; font-weight: 600; color: #49784C;">CVV</label>
+              <input id="cc-cvv" value="{{ ccCvv }}" onChange="{{ onCcCvv }}" inputMode="numeric" placeholder="123" style="min-height: 50px; border: 1px solid #D8E9D3; border-radius: 12px; padding: 0 14px; font-size: 16px; font-family: ui-monospace, monospace; color: #152B14; background: #FFFFFF;" style-focus="outline: 3px solid #1E8A2C; outline-offset: 1px">
+            </div>
+          </div>
+          <div style="display: grid; gap: 6px;">
+            <label for="cc-name" style="font-size: 13px; font-weight: 600; color: #49784C;">Nome impresso no cartão</label>
+            <input id="cc-name" value="{{ ccName }}" onChange="{{ onCcName }}" placeholder="Como está no cartão" style="min-height: 50px; border: 1px solid #D8E9D3; border-radius: 12px; padding: 0 14px; font-size: 16px; color: #152B14; background: #FFFFFF;" style-focus="outline: 3px solid #1E8A2C; outline-offset: 1px">
+          </div>
+          <sc-if value="{{ cardError }}" hint-placeholder-val="{{ false }}">
+            <div style="font-size: 13px; color: #B4432E; background: #FDEEEA; border-radius: 10px; padding: 10px 14px;">{{ cardError }}</div>
+          </sc-if>
+          <button onClick="{{ payCard }}" disabled="{{ paying }}" style="border: none; cursor: pointer; background: {{ accent }}; color: #135B1D; font-family: inherit; font-weight: 700; font-size: 17px; min-height: 54px; border-radius: 14px; display: flex; align-items: center; justify-content: center; gap: 10px;" style-hover="filter: brightness(1.06)" style-focus="outline: 3px solid #1E8A2C; outline-offset: 2px">{{ payLabel }}</button>
+          <div style="font-size: 12px; color: #6E9070; text-align: center;">🔒 Seus dados não ficam salvos</div>
+        </div>
+      </sc-if>
+
+      <!-- passo 3: sucesso -->
+      <sc-if value="{{ stepSuccess }}" hint-placeholder-val="{{ false }}">
+        <div style="display: grid; gap: 16px; justify-items: center; text-align: center; animation: fadeUp .3s ease both;">
+          <div style="width: 64px; height: 64px; border-radius: 50%; background: {{ accent }}; display: flex; align-items: center; justify-content: center; font-size: 30px; color: #135B1D;">✓</div>
+          <div style="display: grid; gap: 4px;">
+            <div style="font-size: 20px; font-weight: 800; color: #135B1D;">Pagamento confirmado!</div>
+            <div style="font-size: 14px; color: #49784C;">Seu voucher de {{ selLabel }} está pronto.</div>
+          </div>
+          <div style="width: 100%; background: #135B1D; border-radius: 16px; padding: 20px; display: grid; gap: 8px;">
+            <div style="font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #B7E3B2;">Seu código de acesso</div>
+            <div style="font-family: ui-monospace, monospace; font-size: 24px; font-weight: 700; letter-spacing: 2px; color: {{ accent }};">{{ voucherCode }}</div>
+          </div>
+          <button onClick="{{ copyVoucher }}" style="border: none; cursor: pointer; background: {{ accent }}; color: #135B1D; font-family: inherit; font-weight: 700; font-size: 16px; min-height: 50px; border-radius: 12px; width: 100%;" style-hover="filter: brightness(1.06)" style-focus="outline: 3px solid #1E8A2C; outline-offset: 2px">{{ copyVoucherLabel }}</button>
+          <div style="font-size: 13px; line-height: 1.6; color: #49784C; text-align: left; background: #E9F4E5; border-radius: 12px; padding: 14px 16px; width: 100%;">
+            <strong style="color: #135B1D;">Como conectar:</strong> abra o Wi-Fi <strong style="color: #135B1D;">"Recôncavo Voucher"</strong>, aguarde a página de login abrir e cole o código acima.
+          </div>
+          <button onClick="{{ closeModal }}" style="border: none; cursor: pointer; background: transparent; color: #1E8A2C; font-family: inherit; font-weight: 600; font-size: 14px; padding: 10px; min-height: 44px;" style-hover="text-decoration: underline">Fechar</button>
+        </div>
+      </sc-if>
+    </div>
+  </div>
+</sc-if>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{
+  &quot;corAcento&quot;: { &quot;editor&quot;: &quot;color&quot;, &quot;default&quot;: &quot;#B4F04B&quot;, &quot;tsType&quot;: &quot;string&quot;, &quot;options&quot;: [&quot;#B4F04B&quot;, &quot;#8FE84A&quot;, &quot;#4ADE80&quot;, &quot;#D9F45C&quot;], &quot;section&quot;: &quot;Marca&quot; },
+  &quot;planoDestaque&quot;: { &quot;editor&quot;: &quot;enum&quot;, &quot;default&quot;: &quot;24h&quot;, &quot;tsType&quot;: &quot;string&quot;, &quot;options&quot;: [&quot;1h&quot;, &quot;2h&quot;, &quot;24h&quot;, &quot;7d&quot;, &quot;30d&quot;], &quot;section&quot;: &quot;Conversão&quot; },
+  &quot;tempoPixSegundos&quot;: { &quot;editor&quot;: &quot;range&quot;, &quot;default&quot;: 5, &quot;min&quot;: 2, &quot;max&quot;: 15, &quot;step&quot;: 1, &quot;unit&quot;: &quot;s&quot;, &quot;tsType&quot;: &quot;number&quot;, &quot;section&quot;: &quot;Demonstração&quot; }
+}">
+class Component extends DCLogic {
+  state = {
+    plan: null, step: null, paying: false,
+    ccNum: '', ccExp: '', ccCvv: '', ccName: '', cardError: '',
+    pixCopied: false, voucherCode: '', voucherCopied: false,
+    voucherInput: '', connecting: false, connected: false, voucherError: ''
+  };
+  PLANS = [
+    { id: '1h',  label: '1 hora',   price: '3',  desc: 'Para resolver algo rápido', perks: ['Velocidade total', 'Ativa quando você usar'] },
+    { id: '2h',  label: '2 horas',  price: '5',  desc: 'Uma tarde de navegação', perks: ['Velocidade total', 'Ativa quando você usar'] },
+    { id: '24h', label: '24 horas', price: '10', desc: 'Um dia inteiro conectado', perks: ['Velocidade total', 'Melhor para o dia a dia', 'Ativa quando você usar'] },
+    { id: '7d',  label: '7 dias',   price: '25', desc: 'Uma semana sem preocupação', perks: ['Velocidade total', 'Uma semana tranquila', 'Ativa quando você usar'] },
+    { id: '30d', label: '30 dias',  price: '60', desc: 'Melhor custo por dia', perks: ['Velocidade total', 'Melhor custo por dia', 'Ativa quando você usar'] }
+  ];
+  componentWillUnmount() { clearTimeout(this._pixTimer); }
+  genCode() {
+    const c = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    const g = n => Array.from({length: n}, () => c[Math.floor(Math.random() * c.length)]).join('');
+    return 'REC-' + g(6);
+  }
+  openPlan(p) { clearTimeout(this._pixTimer); this.setState({ plan: p, step: 'pay', cardError: '', pixCopied: false, voucherCopied: false }); }
+  succeed() { this.setState({ step: 'success', paying: false, voucherCode: this.genCode() }); }
+  renderVals() {
+    const s = this.state;
+    const accent = this.props.corAcento ?? '#B4F04B';
+    const featuredId = this.props.planoDestaque ?? '24h';
+    const pixSecs = this.props.tempoPixSegundos ?? 5;
+    const plans = this.PLANS.map(p => {
+      const f = p.id === featuredId;
+      return {
+        ...p, featured: f,
+        bg: f ? '#135B1D' : '#FFFFFF',
+        border: f ? accent : '#D8E9D3',
+        labelColor: f ? '#B7E3B2' : '#49784C',
+        priceColor: f ? '#F4F9F1' : '#135B1D',
+        subColor: f ? '#B7E3B2' : '#6E9070',
+        divider: f ? 'rgba(255,255,255,0.18)' : '#D8E9D3',
+        checkColor: f ? accent : '#1E8A2C',
+        btnBg: f ? accent : '#135B1D',
+        btnColor: f ? '#135B1D' : '#F4F9F1',
+        cta: f ? 'Quero este' : 'Selecionar',
+        buy: () => this.openPlan(p)
+      };
+    });
+    const sel = s.plan || {};
+    return {
+      accent, plans,
+      steps: [
+        { n: '1', title: 'Escolha o plano', desc: 'De 1 hora a 30 dias. Sem cadastro, sem contrato.' },
+        { n: '2', title: 'Pague por Pix ou cartão', desc: 'A confirmação é automática — leva segundos.' },
+        { n: '3', title: 'Conecte com seu código', desc: 'Digite o código na página do Wi-Fi e pronto.' }
+      ],
+      faqs: [
+        { q: 'O código funciona em qualquer aparelho?', a: 'Sim. Celular, notebook ou tablet — basta conectar na rede Wi-Fi "Recôncavo Voucher" e inserir o código na página que abrir.' },
+        { q: 'Quando começa a contar o tempo?', a: 'O tempo só começa a contar quando você usa o código pela primeira vez, não na hora da compra.' },
+        { q: 'E se o pagamento não confirmar?', a: 'A confirmação por Pix é imediata. Se algo der errado, fale com a gente pelo WhatsApp e resolvemos na hora.' },
+        { q: 'Posso usar o mesmo código em dois aparelhos?', a: 'Cada código vale para um aparelho por vez. Para conectar outro, basta desconectar o primeiro.' }
+      ],
+      modalOpen: !!s.step,
+      stepPay: s.step === 'pay',
+      stepPix: s.step === 'pix',
+      stepCard: s.step === 'card',
+      stepSuccess: s.step === 'success',
+      modalKicker: s.step === 'success' ? 'Tudo certo' : s.step === 'pix' ? 'Pagamento via Pix' : s.step === 'card' ? 'Pagamento com cartão' : 'Finalizar compra',
+      modalTitle: s.step === 'pay' ? 'Como você quer pagar?' : s.step === 'pix' ? 'Escaneie ou copie o código' : s.step === 'card' ? 'Dados do cartão' : 'Voucher liberado',
+      selLabel: sel.label || '', selPrice: sel.price || '',
+      closeModal: () => { clearTimeout(this._pixTimer); this.setState({ step: null, paying: false }); },
+      stop: e => e.stopPropagation(),
+      choosePix: () => {
+        this.setState({ step: 'pix', pixCopied: false });
+        clearTimeout(this._pixTimer);
+        this._pixTimer = setTimeout(() => { if (this.state.step === 'pix') this.succeed(); }, pixSecs * 1000);
+      },
+      chooseCard: () => this.setState({ step: 'card', cardError: '' }),
+      pixCode: '00020126580014BR.GOV.BCB.PIX0136reconcavo-voucher@pix.com.br520400005303986540' + (sel.price || '0') + '.005802BR5917RECONCAVO VOUCHER6009CACHOEIRA62070503***6304A1B2',
+      copyPix: () => { this.setState({ pixCopied: true }); setTimeout(() => this.setState({ pixCopied: false }), 2000); },
+      pixCopyLabel: s.pixCopied ? 'Copiado ✓' : 'Copiar',
+      ccNum: s.ccNum, ccExp: s.ccExp, ccCvv: s.ccCvv, ccName: s.ccName,
+      onCcNum: e => this.setState({ ccNum: e.target.value.replace(/[^\d ]/g, '').slice(0, 19) }),
+      onCcExp: e => this.setState({ ccExp: e.target.value.replace(/[^\d/]/g, '').slice(0, 5) }),
+      onCcCvv: e => this.setState({ ccCvv: e.target.value.replace(/\D/g, '').slice(0, 4) }),
+      onCcName: e => this.setState({ ccName: e.target.value }),
+      cardError: s.cardError,
+      paying: s.paying,
+      payLabel: s.paying ? 'Processando…' : 'Pagar R$ ' + (sel.price || '') + ',00',
+      payCard: () => {
+        if (s.ccNum.replace(/\D/g, '').length < 13 || !s.ccExp || s.ccCvv.length < 3 || !s.ccName.trim()) {
+          this.setState({ cardError: 'Confira os dados do cartão — algum campo está incompleto.' });
+          return;
+        }
+        this.setState({ paying: true, cardError: '' });
+        setTimeout(() => this.succeed(), 1600);
+      },
+      voucherCode: s.voucherCode,
+      copyVoucher: () => {
+        try { navigator.clipboard.writeText(s.voucherCode); } catch (e) {}
+        this.setState({ voucherCopied: true });
+        setTimeout(() => this.setState({ voucherCopied: false }), 2000);
+      },
+      copyVoucherLabel: s.voucherCopied ? 'Código copiado ✓' : 'Copiar código',
+      voucherInput: s.voucherInput,
+      onVoucherInput: e => this.setState({ voucherInput: e.target.value.toUpperCase(), voucherError: '' }),
+      connecting: s.connecting,
+      connected: s.connected,
+      notConnected: !s.connected,
+      connectLabel: s.connecting ? 'Conectando…' : 'Conectar',
+      voucherError: s.voucherError,
+      connect: () => {
+        if (s.voucherInput.trim().length < 6) {
+          this.setState({ voucherError: 'Digite o código completo do seu voucher.' });
+          return;
+        }
+        this.setState({ connecting: true, voucherError: '' });
+        setTimeout(() => this.setState({ connecting: false, connected: true }), 1400);
+      }
+    };
+  }
+}
+</script>
+</body>
+</html>

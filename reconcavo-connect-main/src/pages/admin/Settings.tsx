@@ -67,46 +67,48 @@ export default function Settings() {
     toast.success("Plano removido"); load();
   };
 
+  const darkField = "min-h-[44px] w-full rounded-xl border border-[#3F9C45] bg-[#1B6B24] px-3 text-white placeholder:text-[#8FBF8C] focus:outline-none focus-visible:ring-[3px] focus-visible:ring-[#B4F04B]";
+
   return (
-    <div className="space-y-6 animate-fade-in max-w-4xl">
-      <div>
-        <h2 className="text-2xl font-bold">Planos</h2>
-        <p className="text-sm text-muted-foreground">Configure os planos exibidos na landing page e o profile MikroTik correspondente</p>
+    <div className="space-y-5" style={{ animation: "fadeUp .3s ease" }}>
+      {/* Painel escuro: novo plano */}
+      <div className="rounded-[20px] border border-[#3F9C45] bg-[#135B1D] p-6">
+        <h3 className="mb-4 font-bold text-white">Novo plano</h3>
+        <div className="grid grid-cols-1 items-end gap-3 sm:grid-cols-[2fr_1fr_1fr_1.5fr_auto]">
+          <div className="space-y-1"><label className="text-xs text-[#B7E3B2]">Nome</label><input className={darkField} value={name} onChange={(e) => setName(e.target.value)} placeholder="3 horas" /></div>
+          <div className="space-y-1"><label className="text-xs text-[#B7E3B2]">Minutos</label><input className={darkField} type="number" min={1} value={minutes} onChange={(e) => setMinutes(parseInt(e.target.value) || 0)} /></div>
+          <div className="space-y-1"><label className="text-xs text-[#B7E3B2]">Preço (R$)</label><input className={darkField} type="number" step="0.50" min={0} value={price} onChange={(e) => setPrice(parseFloat(e.target.value) || 0)} /></div>
+          <div className="space-y-1"><label className="text-xs text-[#B7E3B2]">Profile MikroTik</label><input className={`${darkField} font-mono`} value={profile} onChange={(e) => setProfile(e.target.value)} placeholder="plano_3h" /></div>
+          <button onClick={add} disabled={loading}
+            className="flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl bg-[#B4F04B] px-4 font-bold text-[#135B1D] transition hover:brightness-[1.06] disabled:opacity-60">
+            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />} Adicionar
+          </button>
+        </div>
       </div>
 
-      <Card className="p-6 bg-gradient-card">
-        <h3 className="font-semibold mb-4">Novo plano</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-[2fr_1fr_1fr_1.5fr_auto] gap-3 items-end">
-          <div className="space-y-2"><Label>Nome</Label><Input value={name} onChange={(e) => setName(e.target.value)} placeholder="3 horas" /></div>
-          <div className="space-y-2"><Label>Minutos</Label><Input type="number" min={1} value={minutes} onChange={(e) => setMinutes(parseInt(e.target.value) || 0)} /></div>
-          <div className="space-y-2"><Label>Preço (R$)</Label><Input type="number" step="0.50" min={0} value={price} onChange={(e) => setPrice(parseFloat(e.target.value) || 0)} /></div>
-          <div className="space-y-2"><Label>Profile MikroTik</Label><Input value={profile} onChange={(e) => setProfile(e.target.value)} placeholder="plano_3h" /></div>
-          <Button onClick={add} variant="hero" disabled={loading}>{loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}</Button>
-        </div>
-      </Card>
-
+      {/* Lista de planos */}
       <div className="space-y-2">
         {plans.map((p) => (
-          <Card key={p.id} className="p-4 flex flex-col sm:flex-row sm:items-center gap-3">
-            <div className="flex-1 min-w-0">
-              <p className="font-semibold">{p.plan_name}</p>
-              <p className="text-sm text-muted-foreground">{p.duration_minutes} min • {formatBRL(Number(p.price))}</p>
+          <div key={p.id} className="flex flex-col gap-3 rounded-[20px] border-2 border-[#D8E9D3] bg-white p-4 sm:flex-row sm:items-center">
+            <div className="min-w-0 flex-1">
+              <p className="text-lg font-extrabold text-[#135B1D]">{p.plan_name}</p>
+              <p className="text-sm text-[#49784C]">{p.duration_minutes} min · {formatBRL(Number(p.price))}</p>
             </div>
             <div className="flex items-center gap-2 sm:w-72">
-              <Input
+              <input
                 value={p.mikrotik_profile ?? ""}
                 onChange={(e) => updateProfile(p.id, e.target.value)}
                 placeholder="profile MikroTik"
-                className="text-sm"
+                className="min-h-[40px] w-full rounded-xl border border-[#C9DFC0] bg-[#F4F9F1] px-3 font-mono text-sm text-[#152B14] focus:outline-none focus-visible:ring-[3px] focus-visible:ring-[#1E8A2C]"
               />
-              <Button size="icon" variant="ghost" onClick={() => saveProfile(p)} title="Salvar profile"><Save className="h-4 w-4" /></Button>
+              <button onClick={() => saveProfile(p)} title="Salvar profile" className="rounded-lg p-2 text-[#135B1D] transition hover:bg-[#E3F1DE]"><Save className="h-4 w-4" /></button>
             </div>
             <div className="flex items-center gap-2">
-              <Label className="text-xs">Ativo</Label>
+              <span className="text-xs font-semibold text-[#49784C]">Ativo</span>
               <Switch checked={p.active} onCheckedChange={() => toggle(p)} />
-              <Button size="icon" variant="ghost" onClick={() => remove(p.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+              <button onClick={() => remove(p.id)} className="rounded-lg p-2 transition hover:bg-[#FDEEEA]"><Trash2 className="h-4 w-4 text-[#B4432E]" /></button>
             </div>
-          </Card>
+          </div>
         ))}
       </div>
 
@@ -127,27 +129,27 @@ function PaymentInfo() {
     ["VITE_LOGIN_DST", "Frontend (.env)", LOGIN_DST],
   ];
   return (
-    <Card className="p-6 bg-gradient-card space-y-4">
+    <div className="space-y-4 rounded-[20px] border border-[#D8E9D3] bg-[#E9F4E5] p-6">
       <div>
-        <h3 className="font-semibold flex items-center gap-2"><Info className="h-4 w-4" /> Pagamentos & acesso</h3>
-        <p className="text-sm text-muted-foreground">
+        <h3 className="flex items-center gap-2 font-bold text-[#135B1D]"><Info className="h-4 w-4" /> Pagamentos & acesso</h3>
+        <p className="text-sm text-[#49784C]">
           Pix e Cartão via Mercado Pago (confirmação automática por webhook). As chaves são
           configuradas como variáveis de ambiente, não neste painel.
         </p>
       </div>
       <div className="space-y-2">
         {rows.map(([key, where, val]) => (
-          <div key={key} className="flex flex-wrap items-center justify-between gap-2 text-sm border-b pb-2">
-            <code className="font-mono text-foreground">{key}</code>
-            <span className="text-muted-foreground text-xs">{where}</span>
-            <span className="text-xs font-medium">{val}</span>
+          <div key={key} className="flex flex-wrap items-center justify-between gap-2 border-b border-[#D8E9D3] pb-2 text-sm">
+            <code className="font-mono text-[#135B1D]">{key}</code>
+            <span className="text-xs text-[#6E9070]">{where}</span>
+            <span className="text-xs font-semibold text-[#152B14]">{val}</span>
           </div>
         ))}
       </div>
-      <p className="text-xs text-muted-foreground">
-        O IP do gateway e o destino do link “um clique” são lidos do <code>.env</code> do frontend
+      <p className="text-xs text-[#6E9070]">
+        O IP do gateway e o destino do link "um clique" são lidos do <code>.env</code> do frontend
         (<code>VITE_GATEWAY_IP</code> / <code>VITE_LOGIN_DST</code>).
       </p>
-    </Card>
+    </div>
   );
 }

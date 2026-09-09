@@ -51,7 +51,10 @@ export function statusLabel(s: string): string {
     available: "Disponível",
     gerado: "Gerado",
     disponivel: "Disponível",
-    active: "Ativo",
+    // `active` = voucher VENDIDO (alocado a um pedido pago) e ainda dentro da
+    // validade. NÃO significa "cliente conectado agora" — o site não sabe isso;
+    // quem sabe é o MikroTik.
+    active: "Vendido",
     expired: "Expirado",
   };
   return map[s] ?? s;

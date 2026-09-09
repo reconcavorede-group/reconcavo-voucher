@@ -39,49 +39,46 @@ export default function Mikrotik() {
     toast.success(`${list.length} remoção(ões) no arquivo`);
   };
 
+  const removeBtn = "flex items-center gap-2 rounded-xl border border-[#C9DFC0] bg-white px-4 py-2.5 text-sm font-semibold text-[#135B1D] transition hover:bg-[#E3F1DE]";
+
   return (
-    <div className="space-y-6 animate-fade-in max-w-3xl">
-      <div>
-        <h2 className="text-2xl font-bold flex items-center gap-2"><Router className="h-6 w-6 text-primary" /> MikroTik</h2>
-        <p className="text-sm text-muted-foreground">Limpeza de usuários hotspot por importação de arquivo .rsc</p>
+    <div className="max-w-3xl space-y-5" style={{ animation: "fadeUp .3s ease" }}>
+      <div className="space-y-4 rounded-[20px] border-2 border-[#D8E9D3] bg-white p-6">
+        <div>
+          <h3 className="font-bold text-[#135B1D]">Gerar .rsc de remoção</h3>
+          <p className="text-sm text-[#49784C]">Baixe o arquivo e importe no roteador para remover os usuários que não são mais necessários.</p>
+        </div>
+        <div className="flex flex-wrap gap-3">
+          <button className={removeBtn} onClick={() => download(expired, "expirados")}>
+            <Download className="h-4 w-4" /> Remover expirados
+            <span className="rounded-full bg-[#E9F4E5] px-2 py-0.5 text-xs text-[#135B1D]">{expired.length}</span>
+          </button>
+          <button className={removeBtn} onClick={() => download([...expired, ...active], "usados")}>
+            <Download className="h-4 w-4" /> Remover todos usados (vendidos + expirados)
+            <span className="rounded-full bg-[#E9F4E5] px-2 py-0.5 text-xs text-[#135B1D]">{expired.length + active.length}</span>
+          </button>
+        </div>
       </div>
 
-      <Card className="p-6 bg-gradient-card space-y-4">
-        <h3 className="font-semibold">Gerar .rsc de remoção</h3>
-        <p className="text-sm text-muted-foreground">
-          Baixe o arquivo e importe no roteador para remover os usuários que não são mais necessários.
-        </p>
-        <div className="flex flex-wrap gap-3">
-          <Button variant="outline" onClick={() => download(expired, "expirados")}>
-            <Download className="h-4 w-4 mr-1" /> Remover expirados
-            <Badge variant="outline" className="ml-2">{expired.length}</Badge>
-          </Button>
-          <Button variant="outline" onClick={() => download([...expired, ...active], "usados")}>
-            <Download className="h-4 w-4 mr-1" /> Remover todos usados (ativos + expirados)
-            <Badge variant="outline" className="ml-2">{expired.length + active.length}</Badge>
-          </Button>
-        </div>
-      </Card>
-
-      <Card className="p-6 bg-muted/30 text-sm space-y-2">
-        <p className="font-semibold flex items-center gap-2"><Info className="h-4 w-4" /> Como importar no roteador</p>
-        <ol className="list-decimal pl-5 space-y-1 text-muted-foreground">
-          <li><strong>Geração:</strong> em <em>Vouchers</em>, gere o lote e baixe o <code className="text-foreground">.rsc</code> de criação.</li>
-          <li><strong>Importação:</strong> Winbox → <em>Files</em> → arraste o arquivo, ou no terminal <code className="text-foreground">/import file=lote.rsc</code>.</li>
-          <li><strong>Confirmação:</strong> volte em <em>Vouchers</em> e clique <em>Confirmar importação</em> (muda o lote de <em>gerado</em> para <em>disponível</em>).</li>
-          <li><strong>Limpeza:</strong> gere aqui o <code className="text-foreground">.rsc</code> de remoção e importe do mesmo jeito.</li>
+      <div className="space-y-2 rounded-[20px] border border-[#D8E9D3] bg-[#E9F4E5] p-6 text-sm">
+        <p className="flex items-center gap-2 font-bold text-[#135B1D]"><Info className="h-4 w-4" /> Como importar no roteador</p>
+        <ol className="list-decimal space-y-1 pl-5 text-[#49784C]">
+          <li><strong className="text-[#135B1D]">Geração:</strong> em <em>Vouchers</em>, gere o lote e baixe o <code className="text-[#135B1D]">.rsc</code> de criação.</li>
+          <li><strong className="text-[#135B1D]">Importação:</strong> Winbox → <em>Files</em> → arraste o arquivo, ou no terminal <code className="text-[#135B1D]">/import file=lote.rsc</code>.</li>
+          <li><strong className="text-[#135B1D]">Confirmação:</strong> volte em <em>Vouchers</em> e clique <em>Confirmar importação</em> (muda o lote de <em>gerado</em> para <em>disponível</em>).</li>
+          <li><strong className="text-[#135B1D]">Limpeza:</strong> gere aqui o <code className="text-[#135B1D]">.rsc</code> de remoção e importe do mesmo jeito.</li>
         </ol>
-        <p className="text-xs pt-2">
-          Requer <code className="text-foreground">login-by=http-pap</code> no profile do hotspot para o acesso em um clique funcionar.
+        <p className="pt-2 text-xs text-[#6E9070]">
+          Requer <code className="text-[#135B1D]">login-by=http-pap</code> no profile do hotspot para o acesso em um clique funcionar.
         </p>
-      </Card>
+      </div>
 
-      <Card className="p-4 bg-muted/20 text-xs text-muted-foreground border-dashed">
-        <p className="font-semibold text-foreground mb-1">Legado desativado</p>
-        A conexão em tempo real com a REST API do roteador (host/porta/usuário/senha e “Testar conexão”)
+      <div className="rounded-[20px] border-2 border-dashed border-[#D8E9D3] bg-white p-4 text-xs text-[#6E9070]">
+        <p className="mb-1 font-bold text-[#135B1D]">Legado desativado</p>
+        A conexão em tempo real com a REST API do roteador (host/porta/usuário/senha e "Testar conexão")
         foi <strong>descontinuada por segurança</strong> — não expõe mais o roteador à internet. A criação de
         usuários é feita exclusivamente por importação manual de <code>.rsc</code>, como descrito acima.
-      </Card>
+      </div>
     </div>
   );
 }
