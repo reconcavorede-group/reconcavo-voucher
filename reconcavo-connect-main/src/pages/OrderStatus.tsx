@@ -31,6 +31,7 @@ export default function OrderStatus() {
   const { id } = useParams();
   const [order, setOrder] = useState<Order | null>(null);
   const [voucher, setVoucher] = useState<Voucher | null>(null);
+  const [gateway, setGateway] = useState<string | undefined>(undefined);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -46,6 +47,7 @@ export default function OrderStatus() {
       if (o?.status === "completed" && o?.voucher_id) {
         const { data: res } = await supabase.functions.invoke("get-voucher", { body: { order_id: id } });
         setVoucher((res?.voucher ?? null) as Voucher | null);
+        setGateway(res?.gateway_ip ?? undefined);
       } else {
         setVoucher(null);
       }
@@ -199,7 +201,7 @@ export default function OrderStatus() {
                 </button>
               </div>
 
-              <a href={buildLoginUrl(voucher.code)} target="_blank" rel="noreferrer"
+              <a href={buildLoginUrl(voucher.code, gateway)} target="_blank" rel="noreferrer"
                 className="flex min-h-[52px] w-full items-center justify-center gap-2 rounded-xl bg-[#B4F04B] px-4 font-bold text-[#152B14] transition hover:brightness-[1.06] active:scale-[0.98]">
                 <ExternalLink className="h-4 w-4" /> Conectar agora (um clique)
               </a>

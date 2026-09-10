@@ -10,7 +10,9 @@ export const LOGIN_DST = import.meta.env.VITE_LOGIN_DST ?? "https://www.google.c
 
 // Monta o link de login por GET do hotspot MikroTik (requer login-by=http-pap).
 // A credencial vai exposta na URL — limitação conhecida e aceita.
-export function buildLoginUrl(code: string): string {
+// `gateway` vem do LOCAL do voucher (multi-local); se ausente, usa o IP padrão
+// do .env (compatível com instalação de local único).
+export function buildLoginUrl(code: string, gateway?: string): string {
   const q = new URLSearchParams({ username: code, password: code, dst: LOGIN_DST });
-  return `http://${GATEWAY_IP}/login?${q.toString()}`;
+  return `http://${gateway || GATEWAY_IP}/login?${q.toString()}`;
 }

@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
 import { formatBRL, statusLabel } from "@/lib/voucher";
+import { useAdminLocation } from "@/lib/adminLocation";
 
 interface Sale {
   id: string; plan_name: string; amount: number; payment_method: string; status: string;
@@ -20,18 +21,22 @@ interface Sale {
 // tela é somente leitura/relatório — não há mais botão "Confirmar" manual, pois
 // não existe método "Dinheiro" no site.
 export default function Sales() {
+  const { locationId } = useAdminLocation();
   const [sales, setSales] = useState<Sale[]>([]);
   const [filter, setFilter] = useState<"all" | "pending" | "completed" | "failed" | "no_stock">("all");
 
+  useEffect(() => { document.title = "Vendas — Recôncavo Voucher"; }, []);
+
   useEffect(() => {
-    document.title = "Vendas — Recôncavo Voucher";
+    if (!locationId) return;
     load();
     const ch = supabase.channel("sales").on("postgres_changes", { event: "*", schema: "public", table: "payments" }, load).subscribe();
     return () => { supabase.removeChannel(ch); };
-  }, []);
+  }, [locationId]);
 
   const load = async () => {
-    const { data } = await supabase.from("payments").select("*").order("created_at", { ascending: false }).limit(500);
+    if (!locationId) return;
+    const { data } = await supabase.from("payments").select("*").eq("location_id", locationId).order("created_at", { ascending: false }).limit(500);
     setSales((data ?? []) as Sale[]);
   };
 

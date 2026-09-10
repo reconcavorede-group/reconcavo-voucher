@@ -15,7 +15,7 @@ Deno.serve(async (req) => {
     const supabase = serviceClient();
     const { data: v } = await supabase
       .from("vouchers")
-      .select("status, expires_at")
+      .select("status, expires_at, locations(gateway_ip)")
       .eq("code", code)
       .maybeSingle();
 
@@ -23,6 +23,9 @@ Deno.serve(async (req) => {
       return jsonResponse({ valid: false, reason: "Voucher inválido. Confira o código digitado." });
     }
 
+    // gateway_ip do LOCAL do voucher — o site usa para montar o link de login
+    // no MikroTik correto (multi-local).
+    const gateway_ip = (v as { locations?: { gateway_ip?: string } }).locations?.gateway_ip ?? null;
     const now = Date.now();
     const expired = v.expires_at ? new Date(v.expires_at).getTime() < now : false;
 
@@ -34,7 +37,7 @@ Deno.serve(async (req) => {
     }
 
     // `disponivel` (estoque importado) ou `active` (vendido) e dentro da validade.
-    return jsonResponse({ valid: true, status: v.status });
+    return jsonResponse({ valid: true, status: v.status, gateway_ip });
   } catch (e) {
     return jsonResponse({ valid: false, reason: (e as Error).message }, 500);
   }

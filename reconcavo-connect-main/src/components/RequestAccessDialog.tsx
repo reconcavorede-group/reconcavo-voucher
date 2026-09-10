@@ -11,6 +11,7 @@ interface Plan {
   plan_name: string;
   duration_minutes: number;
   price: number;
+  location_id: string | null;
 }
 
 interface Props {
@@ -39,6 +40,7 @@ export function RequestAccessDialog({ plan, open, onOpenChange }: Props) {
         amount: plan.price,
         payment_method: "pix",
         status: "pending",
+        location_id: plan.location_id,
       })
       .select("id")
       .single();

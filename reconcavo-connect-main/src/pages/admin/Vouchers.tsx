@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { generateVoucherCode, formatBRL, formatDuration, statusLabel } from "@/lib/voucher";
 import { buildAddRsc, downloadRsc } from "@/lib/rsc";
+import { useAdminLocation } from "@/lib/adminLocation";
 
 interface Plan { id: string; plan_name: string; duration_minutes: number; price: number; mikrotik_profile: string | null; }
 interface Voucher {
@@ -28,25 +29,29 @@ interface Batch {
 }
 
 export default function Vouchers() {
+  const { locationId } = useAdminLocation();
   const [plans, setPlans] = useState<Plan[]>([]);
   const [vouchers, setVouchers] = useState<Voucher[]>([]);
   const [planId, setPlanId] = useState<string>("");
   const [qty, setQty] = useState(10);
   const [creating, setCreating] = useState(false);
 
+  useEffect(() => { document.title = "Vouchers — Recôncavo Voucher"; }, []);
+
   useEffect(() => {
-    document.title = "Vouchers — Recôncavo Voucher";
-    supabase.from("settings").select("*").eq("active", true).order("sort_order").then(({ data }) => {
+    if (!locationId) return;
+    supabase.from("settings").select("*").eq("active", true).eq("location_id", locationId).order("sort_order").then(({ data }) => {
       setPlans((data ?? []) as Plan[]);
-      if (data?.[0]) setPlanId(data[0].id);
+      setPlanId(data?.[0]?.id ?? "");
     });
     load();
     const ch = supabase.channel("vouchers").on("postgres_changes", { event: "*", schema: "public", table: "vouchers" }, load).subscribe();
     return () => { supabase.removeChannel(ch); };
-  }, []);
+  }, [locationId]);
 
   const load = async () => {
-    const { data } = await supabase.from("vouchers").select("*").order("created_at", { ascending: false }).limit(500);
+    if (!locationId) return;
+    const { data } = await supabase.from("vouchers").select("*").eq("location_id", locationId).order("created_at", { ascending: false }).limit(500);
     setVouchers((data ?? []) as Voucher[]);
   };
 
@@ -54,6 +59,7 @@ export default function Vouchers() {
   const handleGenerate = async () => {
     const plan = plans.find((p) => p.id === planId);
     if (!plan) return toast.error("Selecione um plano");
+    if (!locationId) return toast.error("Selecione um local primeiro");
     if (qty < 1 || qty > 200) return toast.error("Quantidade entre 1 e 200");
     setCreating(true);
     const batchId = crypto.randomUUID();
@@ -68,6 +74,7 @@ export default function Vouchers() {
         status: "gerado",
         batch_id: batchId,
         mikrotik_profile: plan.mikrotik_profile,
+        location_id: locationId,
       };
     });
     const { error } = await supabase.from("vouchers").insert(rows);

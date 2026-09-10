@@ -31,7 +31,7 @@ Deno.serve(async (req) => {
     const supabase = serviceClient();
     const { data: order } = await supabase
       .from("payments")
-      .select("status, voucher_id")
+      .select("status, voucher_id, locations(gateway_ip)")
       .eq("id", order_id)
       .maybeSingle();
 
@@ -39,13 +39,15 @@ Deno.serve(async (req) => {
       return jsonResponse({ ok: true, voucher: null });
     }
 
+    const gateway_ip = (order as { locations?: { gateway_ip?: string } }).locations?.gateway_ip ?? null;
+
     const { data: voucher } = await supabase
       .from("vouchers")
       .select("code, expires_at, duration_minutes, price")
       .eq("id", order.voucher_id)
       .maybeSingle();
 
-    return jsonResponse({ ok: true, voucher: voucher ?? null });
+    return jsonResponse({ ok: true, voucher: voucher ?? null, gateway_ip });
   } catch (e) {
     return jsonResponse({ ok: false, message: (e as Error).message }, 500);
   }

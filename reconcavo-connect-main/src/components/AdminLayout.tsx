@@ -3,7 +3,8 @@ import { Outlet, NavLink, Link, useLocation } from "react-router-dom";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { AdminLogin } from "./AdminLogin";
-import { Loader2, LogOut, ExternalLink } from "lucide-react";
+import { AdminLocationProvider, useAdminLocation } from "@/lib/adminLocation";
+import { Loader2, LogOut, ExternalLink, MapPin } from "lucide-react";
 
 const NAV = [
   { to: "/admin", label: "Dashboard", end: true, title: "Dashboard", sub: "Acompanhe a operação em tempo real" },
@@ -11,32 +12,38 @@ const NAV = [
   { to: "/admin/sales", label: "Vendas", title: "Vendas", sub: "Histórico de pedidos e faturamento" },
   { to: "/admin/settings", label: "Planos", title: "Planos", sub: "Configure os planos exibidos na loja" },
   { to: "/admin/mikrotik", label: "MikroTik", title: "MikroTik", sub: "Importação e limpeza de usuários do roteador" },
+  { to: "/admin/locations", label: "Locais", title: "Locais", sub: "Gerencie seus pontos de Wi-Fi (MikroTiks)" },
 ];
 
-export default function AdminLayout() {
-  const [session, setSession] = useState<Session | null | undefined>(undefined);
+// Seletor de local — define qual ponto (MikroTik) o painel está gerenciando.
+// Escondido na própria tela de Locais (que é global).
+function LocationSelector() {
+  const { locations, locationId, setLocationId } = useAdminLocation();
+  if (locations.length === 0) return null;
+  return (
+    <label className="inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/10 px-3 py-1.5 text-sm font-semibold text-white">
+      <MapPin className="h-4 w-4 text-[#B4F04B]" />
+      <span className="text-[#D8F0D4]">Local:</span>
+      <select
+        value={locationId ?? ""}
+        onChange={(e) => setLocationId(e.target.value)}
+        className="cursor-pointer bg-transparent font-bold text-white focus:outline-none [&>option]:text-[#152B14]"
+      >
+        {locations.map((l) => (
+          <option key={l.id} value={l.id}>{l.name}{!l.active ? " (inativo)" : ""}</option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
+function AdminShell() {
   const { pathname } = useLocation();
-
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => setSession(data.session));
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, s) => setSession(s));
-    return () => sub.subscription.unsubscribe();
-  }, []);
-
-  if (session === undefined) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-[#F4F9F1]">
-        <Loader2 className="h-8 w-8 animate-spin text-[#1E8A2C]" />
-      </div>
-    );
-  }
-  if (!session) return <AdminLogin />;
-
   const active = NAV.find((n) => (n.end ? pathname === n.to : pathname.startsWith(n.to))) ?? NAV[0];
+  const showSelector = pathname !== "/admin/locations";
 
   return (
     <div className="min-h-screen bg-[#F4F9F1] text-[#152B14]">
-      {/* Header claro */}
       <header className="sticky top-0 z-40 border-b border-[#D8E9D3] bg-[#F4F9F1]/90 backdrop-blur-md">
         <div className="mx-auto flex max-w-[1080px] items-center justify-between gap-3 px-5 py-3">
           <div className="flex items-center gap-2.5">
@@ -58,19 +65,21 @@ export default function AdminLayout() {
         </div>
       </header>
 
-      {/* Faixa verde com título da seção + pills */}
       <div className="bg-brand-flow px-5 pb-14 pt-8 text-white">
         <div className="mx-auto max-w-[1080px]">
-          <h1 className="text-[clamp(26px,4vw,34px)] font-extrabold tracking-[-0.01em]">{active.title}</h1>
-          <p className="mt-1 text-[#D8F0D4]">{active.sub}</p>
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h1 className="text-[clamp(26px,4vw,34px)] font-extrabold tracking-[-0.01em]">{active.title}</h1>
+              <p className="mt-1 text-[#D8F0D4]">{active.sub}</p>
+            </div>
+            {showSelector && <LocationSelector />}
+          </div>
           <nav className="mt-5 flex flex-wrap gap-2">
             {NAV.map((n) => (
               <NavLink key={n.to} to={n.to} end={n.end}
                 className={({ isActive }) =>
                   `rounded-full px-4 py-2 text-sm font-semibold transition ${
-                    isActive
-                      ? "bg-[#B4F04B] text-[#135B1D]"
-                      : "border border-white/30 bg-white/10 text-white hover:bg-white/20"
+                    isActive ? "bg-[#B4F04B] text-[#135B1D]" : "border border-white/30 bg-white/10 text-white hover:bg-white/20"
                   }`
                 }>
                 {n.label}
@@ -80,10 +89,34 @@ export default function AdminLayout() {
         </div>
       </div>
 
-      {/* Conteúdo sobreposto à faixa */}
       <main className="mx-auto -mt-10 max-w-[1080px] px-5 pb-16">
         <Outlet />
       </main>
     </div>
+  );
+}
+
+export default function AdminLayout() {
+  const [session, setSession] = useState<Session | null | undefined>(undefined);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => setSession(data.session));
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, s) => setSession(s));
+    return () => sub.subscription.unsubscribe();
+  }, []);
+
+  if (session === undefined) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#F4F9F1]">
+        <Loader2 className="h-8 w-8 animate-spin text-[#1E8A2C]" />
+      </div>
+    );
+  }
+  if (!session) return <AdminLogin />;
+
+  return (
+    <AdminLocationProvider>
+      <AdminShell />
+    </AdminLocationProvider>
   );
 }

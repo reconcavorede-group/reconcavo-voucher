@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { formatBRL } from "@/lib/voucher";
 import { GATEWAY_IP, LOGIN_DST, MP_PUBLIC_KEY } from "@/lib/config";
+import { useAdminLocation } from "@/lib/adminLocation";
 
 interface Plan {
   id: string; plan_name: string; duration_minutes: number; price: number;
@@ -16,6 +17,7 @@ interface Plan {
 }
 
 export default function Settings() {
+  const { locationId, current } = useAdminLocation();
   const [plans, setPlans] = useState<Plan[]>([]);
   const [name, setName] = useState("");
   const [minutes, setMinutes] = useState(60);
@@ -23,22 +25,22 @@ export default function Settings() {
   const [profile, setProfile] = useState("");
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    document.title = "Planos — Recôncavo Voucher";
-    load();
-  }, []);
+  useEffect(() => { document.title = "Planos — Recôncavo Voucher"; }, []);
+  useEffect(() => { if (locationId) load(); }, [locationId]);
 
   const load = async () => {
-    const { data } = await supabase.from("settings").select("*").order("sort_order");
+    const { data } = await supabase.from("settings").select("*").eq("location_id", locationId!).order("sort_order");
     setPlans((data ?? []) as Plan[]);
   };
 
   const add = async () => {
     if (!name.trim()) return toast.error("Informe um nome");
+    if (!locationId) return toast.error("Selecione um local primeiro");
     setLoading(true);
     const { error } = await supabase.from("settings").insert({
       plan_name: name.trim(), duration_minutes: minutes, price,
       sort_order: plans.length + 1, mikrotik_profile: profile.trim() || null,
+      location_id: locationId,
     });
     setLoading(false);
     if (error) return toast.error(error.message);

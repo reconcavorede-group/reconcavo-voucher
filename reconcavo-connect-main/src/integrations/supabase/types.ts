@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      locations: {
+        Row: {
+          active: boolean
+          created_at: string
+          gateway_ip: string
+          id: string
+          name: string
+          slug: string
+          sort_order: number
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          gateway_ip?: string
+          id?: string
+          name: string
+          slug: string
+          sort_order?: number
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          gateway_ip?: string
+          id?: string
+          name?: string
+          slug?: string
+          sort_order?: number
+        }
+        Relationships: []
+      }
       mikrotik_config: {
         Row: {
           enabled: boolean
@@ -67,6 +97,7 @@ export type Database = {
           customer_phone: string | null
           duration_minutes: number
           id: string
+          location_id: string | null
           mercadopago_payment_id: string | null
           mercadopago_status: string | null
           notes: string | null
@@ -86,6 +117,7 @@ export type Database = {
           customer_phone?: string | null
           duration_minutes: number
           id?: string
+          location_id?: string | null
           mercadopago_payment_id?: string | null
           mercadopago_status?: string | null
           notes?: string | null
@@ -105,6 +137,7 @@ export type Database = {
           customer_phone?: string | null
           duration_minutes?: number
           id?: string
+          location_id?: string | null
           mercadopago_payment_id?: string | null
           mercadopago_status?: string | null
           notes?: string | null
@@ -167,6 +200,7 @@ export type Database = {
           created_at: string
           duration_minutes: number
           id: string
+          location_id: string | null
           mikrotik_profile: string | null
           plan_name: string
           price: number
@@ -177,6 +211,7 @@ export type Database = {
           created_at?: string
           duration_minutes: number
           id?: string
+          location_id?: string | null
           mikrotik_profile?: string | null
           plan_name: string
           price: number
@@ -187,6 +222,7 @@ export type Database = {
           created_at?: string
           duration_minutes?: number
           id?: string
+          location_id?: string | null
           mikrotik_profile?: string | null
           plan_name?: string
           price?: number
@@ -205,6 +241,7 @@ export type Database = {
           expires_at: string | null
           id: string
           imported_at: string | null
+          location_id: string | null
           mikrotik_error: string | null
           mikrotik_profile: string | null
           mikrotik_synced: boolean
@@ -223,6 +260,7 @@ export type Database = {
           expires_at?: string | null
           id?: string
           imported_at?: string | null
+          location_id?: string | null
           mikrotik_error?: string | null
           mikrotik_profile?: string | null
           mikrotik_synced?: boolean
@@ -241,6 +279,7 @@ export type Database = {
           expires_at?: string | null
           id?: string
           imported_at?: string | null
+          location_id?: string | null
           mikrotik_error?: string | null
           mikrotik_profile?: string | null
           mikrotik_synced?: boolean

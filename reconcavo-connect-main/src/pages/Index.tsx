@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { MapPin } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { PlanCard } from "@/components/PlanCard";
 import { RequestAccessDialog } from "@/components/RequestAccessDialog";
@@ -11,7 +12,9 @@ interface Plan {
   duration_minutes: number;
   price: number;
   sort_order: number;
+  location_id: string | null;
 }
+interface Loc { id: string; name: string; slug: string; gateway_ip: string; active: boolean; }
 
 const FAQ = [
   { q: "Funciona em qualquer aparelho?", a: "Sim. Celular, tablet ou notebook — basta conectar na rede Wi-Fi e usar o seu código." },
@@ -21,6 +24,8 @@ const FAQ = [
 ];
 
 export default function Index() {
+  const [locations, setLocations] = useState<Loc[]>([]);
+  const [location, setLocation] = useState<Loc | null>(null);
   const [plans, setPlans] = useState<Plan[]>([]);
   const [selected, setSelected] = useState<Plan | null>(null);
   const [open, setOpen] = useState(false);
@@ -29,11 +34,25 @@ export default function Index() {
   const [codeError, setCodeError] = useState("");
   const [hideHeader, setHideHeader] = useState(false);
 
+  // Carrega os locais e decide o local atual: ?loja=<slug> (captive portal),
+  // ou o único local existente, ou nenhum (mostra o seletor).
   useEffect(() => {
     document.title = "Recôncavo Voucher — Wi-Fi por hora, dia ou mês";
-    supabase.from("settings").select("*").eq("active", true).order("sort_order")
-      .then(({ data }) => setPlans(data ?? []));
+    supabase.from("locations").select("*").eq("active", true).order("sort_order").then(({ data }) => {
+      const locs = (data ?? []) as Loc[];
+      setLocations(locs);
+      const slug = new URLSearchParams(window.location.search).get("loja");
+      const fromSlug = slug ? locs.find((l) => l.slug === slug) : undefined;
+      setLocation(fromSlug ?? (locs.length === 1 ? locs[0] : null));
+    });
   }, []);
+
+  // Planos do local selecionado.
+  useEffect(() => {
+    if (!location) { setPlans([]); return; }
+    supabase.from("settings").select("*").eq("active", true).eq("location_id", location.id).order("sort_order")
+      .then(({ data }) => setPlans((data ?? []) as Plan[]));
+  }, [location]);
 
   // Header inteligente: perto do topo fica visível; ao descer a página some;
   // ao subir volta a aparecer.
@@ -60,7 +79,9 @@ export default function Index() {
       const { data, error } = await supabase.functions.invoke("validate-voucher", { body: { code: c } });
       if (error) { setCodeError("Não foi possível validar agora. Tente de novo."); return; }
       if (!data?.valid) { setCodeError(data?.reason ?? "Voucher inválido."); return; }
-      window.location.href = buildLoginUrl(c);
+      // O gateway vem do LOCAL do voucher (validate-voucher devolve). Fallback:
+      // o local selecionado na loja, se houver.
+      window.location.href = buildLoginUrl(c, data.gateway_ip ?? location?.gateway_ip);
     } finally { setChecking(false); }
   };
 
@@ -143,17 +164,43 @@ export default function Index() {
 
         {/* Grade de planos (funil, sem preço) */}
         <section id="planos" className="mx-auto max-w-[1080px] px-5 pt-16">
-          <div>
-            <h2 className="text-[clamp(24px,4vw,32px)] font-extrabold tracking-[-0.01em] text-[#135B1D]">Escolha quanto tempo você precisa</h2>
-            <p className="mt-2 text-[#49784C]">
-              Todos com a mesma velocidade. Toque em um plano para ver o valor e pagar.
-            </p>
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <h2 className="text-[clamp(24px,4vw,32px)] font-extrabold tracking-[-0.01em] text-[#135B1D]">Escolha quanto tempo você precisa</h2>
+              <p className="mt-2 text-[#49784C]">
+                Todos com a mesma velocidade. Toque em um plano para ver o valor e pagar.
+              </p>
+            </div>
+            {locations.length > 1 && (
+              <label className="inline-flex items-center gap-2 rounded-xl border-2 border-[#D8E9D3] bg-white px-3 py-2 text-sm font-semibold text-[#135B1D]">
+                <MapPin className="h-4 w-4 text-[#1E8A2C]" /> Local:
+                <select
+                  value={location?.id ?? ""}
+                  onChange={(e) => setLocation(locations.find((l) => l.id === e.target.value) ?? null)}
+                  className="cursor-pointer bg-transparent font-bold focus:outline-none"
+                >
+                  <option value="" disabled>Escolha…</option>
+                  {locations.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}
+                </select>
+              </label>
+            )}
           </div>
-          <div className="mt-10 grid gap-[18px] [grid-template-columns:repeat(auto-fit,minmax(250px,1fr))]">
-            {plans.map((p, i) => (
-              <PlanCard key={p.id} name={p.plan_name} durationMinutes={p.duration_minutes} highlight={i === 2} onSelect={() => handleSelect(p)} />
-            ))}
-          </div>
+
+          {!location ? (
+            <div className="mt-10 rounded-[20px] border-2 border-dashed border-[#D8E9D3] bg-white p-8 text-center text-[#49784C]">
+              Escolha o local acima para ver os planos disponíveis.
+            </div>
+          ) : plans.length === 0 ? (
+            <div className="mt-10 rounded-[20px] border-2 border-dashed border-[#D8E9D3] bg-white p-8 text-center text-[#49784C]">
+              Nenhum plano disponível em <strong className="text-[#135B1D]">{location.name}</strong> no momento.
+            </div>
+          ) : (
+            <div className="mt-10 grid gap-[18px] [grid-template-columns:repeat(auto-fit,minmax(250px,1fr))]">
+              {plans.map((p, i) => (
+                <PlanCard key={p.id} name={p.plan_name} durationMinutes={p.duration_minutes} highlight={plans.length >= 3 && i === Math.floor(plans.length / 2)} onSelect={() => handleSelect(p)} />
+              ))}
+            </div>
+          )}
           <p className="mt-6 text-center text-sm text-[#6E9070]">
             Pix ou cartão · confirmação automática · código entregue na tela
           </p>

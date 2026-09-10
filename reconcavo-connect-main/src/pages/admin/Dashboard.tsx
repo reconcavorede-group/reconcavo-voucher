@@ -3,6 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Ticket, CheckCircle2, DollarSign, Clock, TrendingUp, AlertTriangle, PackageX } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { formatBRL } from "@/lib/voucher";
+import { useAdminLocation } from "@/lib/adminLocation";
 
 interface Stats {
   totalVouchers: number;
@@ -14,21 +15,25 @@ interface Stats {
 interface PlanStock { plan_name: string; available: number; }
 
 export default function Dashboard() {
+  const { locationId } = useAdminLocation();
   const [stats, setStats] = useState<Stats>({ totalVouchers: 0, activeVouchers: 0, revenue: 0, pending: 0, todaySales: 0 });
   const [lowStock, setLowStock] = useState<PlanStock[]>([]);
   const [noStockOrders, setNoStockOrders] = useState(0);
 
+  useEffect(() => { document.title = "Dashboard — Recôncavo Voucher"; }, []);
+
   useEffect(() => {
-    document.title = "Dashboard — Recôncavo Voucher";
+    if (!locationId) return;
+    const loc = locationId;
     const load = async () => {
       const [vAll, vActive, payCompleted, payPending, plans, dispVouchers, noStock] = await Promise.all([
-        supabase.from("vouchers").select("id", { count: "exact", head: true }),
-        supabase.from("vouchers").select("id", { count: "exact", head: true }).eq("status", "active"),
-        supabase.from("payments").select("amount, completed_at").eq("status", "completed"),
-        supabase.from("payments").select("id", { count: "exact", head: true }).eq("status", "pending"),
-        supabase.from("settings").select("plan_name").eq("active", true),
-        supabase.from("vouchers").select("duration_type").eq("status", "disponivel"),
-        supabase.from("payments").select("id", { count: "exact", head: true }).eq("status", "no_stock"),
+        supabase.from("vouchers").select("id", { count: "exact", head: true }).eq("location_id", loc),
+        supabase.from("vouchers").select("id", { count: "exact", head: true }).eq("location_id", loc).eq("status", "active"),
+        supabase.from("payments").select("amount, completed_at").eq("location_id", loc).eq("status", "completed"),
+        supabase.from("payments").select("id", { count: "exact", head: true }).eq("location_id", loc).eq("status", "pending"),
+        supabase.from("settings").select("plan_name").eq("location_id", loc).eq("active", true),
+        supabase.from("vouchers").select("duration_type").eq("location_id", loc).eq("status", "disponivel"),
+        supabase.from("payments").select("id", { count: "exact", head: true }).eq("location_id", loc).eq("status", "no_stock"),
       ]);
       const today = new Date(); today.setHours(0, 0, 0, 0);
       const completed = payCompleted.data ?? [];
@@ -57,7 +62,7 @@ export default function Dashboard() {
     load();
     const ch = supabase.channel("dashboard").on("postgres_changes", { event: "*", schema: "public" }, load).subscribe();
     return () => { supabase.removeChannel(ch); };
-  }, []);
+  }, [locationId]);
 
   const cards = [
     { title: "Receita total", value: formatBRL(stats.revenue), icon: DollarSign, dark: true },
