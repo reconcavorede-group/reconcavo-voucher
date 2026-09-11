@@ -29,7 +29,7 @@ interface Batch {
 }
 
 export default function Vouchers() {
-  const { locationId } = useAdminLocation();
+  const { locationId, current } = useAdminLocation();
   const [plans, setPlans] = useState<Plan[]>([]);
   const [vouchers, setVouchers] = useState<Voucher[]>([]);
   const [planId, setPlanId] = useState<string>("");
@@ -106,7 +106,9 @@ export default function Vouchers() {
   const downloadBatch = (b: Batch) => {
     const rsc = buildAddRsc(b.vouchers.map((v) => ({ code: v.code, mikrotik_profile: v.mikrotik_profile, duration_minutes: v.duration_minutes })));
     const stamp = new Date(b.createdAt).toISOString().slice(0, 10);
-    downloadRsc(`lote-${b.planName}-${stamp}`.replace(/\s+/g, "_"), rsc);
+    const qty = b.vouchers.length;
+    const loja = current?.slug || "sem-local";
+    downloadRsc(`lote-${b.planName}-${qty}un-${loja}-${stamp}`.replace(/\s+/g, "_"), rsc);
   };
 
   // "Confirmar importação": gerado -> disponivel para todos os vouchers do lote.
