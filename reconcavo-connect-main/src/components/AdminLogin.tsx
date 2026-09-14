@@ -11,6 +11,7 @@ import { toast } from "sonner";
 // A sessão autenticada é o que ativa as policies de admin na RLS — sem login,
 // o banco recusa qualquer operação administrativa.
 export function AdminLogin() {
+  const [mode, setMode] = useState<"login" | "forgot">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -27,6 +28,24 @@ export function AdminLogin() {
     // O onAuthStateChange no AdminLayout troca a tela automaticamente.
   };
 
+  // Envia o e-mail de redefinição para a conta informada. O Supabase só dispara
+  // se o e-mail existir; por segurança mostramos sempre a mesma mensagem (não
+  // revela se a conta existe). O link leva a /reset-senha.
+  const sendReset = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+      redirectTo: `${window.location.origin}/reset-senha`,
+    });
+    setLoading(false);
+    if (error) {
+      toast.error("Não foi possível enviar: " + error.message);
+      return;
+    }
+    toast.success("Se este e-mail estiver cadastrado, enviamos um link de redefinição.");
+    setMode("login");
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-muted/30 p-4">
       <Card className="w-full max-w-sm p-6 space-y-5">
@@ -36,30 +55,59 @@ export function AdminLogin() {
           </div>
           <div>
             <h1 className="font-bold text-foreground">Painel Administrativo</h1>
-            <p className="text-xs text-muted-foreground">Acesso restrito</p>
+            <p className="text-xs text-muted-foreground">
+              {mode === "login" ? "Acesso restrito" : "Recuperar acesso"}
+            </p>
           </div>
         </div>
 
-        <form onSubmit={submit} className="space-y-4">
-          <div className="space-y-1">
-            <Label htmlFor="admin-email" className="text-xs">E-mail</Label>
-            <Input
-              id="admin-email" type="email" autoComplete="username"
-              value={email} onChange={(e) => setEmail(e.target.value)} required
-            />
-          </div>
-          <div className="space-y-1">
-            <Label htmlFor="admin-password" className="text-xs">Senha</Label>
-            <Input
-              id="admin-password" type="password" autoComplete="current-password"
-              value={password} onChange={(e) => setPassword(e.target.value)} required
-            />
-          </div>
-          <Button type="submit" className="w-full" disabled={loading}>
-            {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-            Entrar
-          </Button>
-        </form>
+        {mode === "login" ? (
+          <form onSubmit={submit} className="space-y-4">
+            <div className="space-y-1">
+              <Label htmlFor="admin-email" className="text-xs">E-mail</Label>
+              <Input
+                id="admin-email" type="email" autoComplete="username"
+                value={email} onChange={(e) => setEmail(e.target.value)} required
+              />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="admin-password" className="text-xs">Senha</Label>
+              <Input
+                id="admin-password" type="password" autoComplete="current-password"
+                value={password} onChange={(e) => setPassword(e.target.value)} required
+              />
+            </div>
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Entrar
+            </Button>
+            <button type="button" onClick={() => setMode("forgot")}
+              className="w-full text-center text-xs text-muted-foreground underline-offset-2 hover:underline">
+              Esqueci minha senha
+            </button>
+          </form>
+        ) : (
+          <form onSubmit={sendReset} className="space-y-4">
+            <p className="text-xs text-muted-foreground">
+              Informe o e-mail cadastrado. Enviaremos um link para você criar uma nova senha.
+            </p>
+            <div className="space-y-1">
+              <Label htmlFor="reset-email" className="text-xs">E-mail</Label>
+              <Input
+                id="reset-email" type="email" autoComplete="username"
+                value={email} onChange={(e) => setEmail(e.target.value)} required
+              />
+            </div>
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Enviar link de redefinição
+            </Button>
+            <button type="button" onClick={() => setMode("login")}
+              className="w-full text-center text-xs text-muted-foreground underline-offset-2 hover:underline">
+              Voltar ao login
+            </button>
+          </form>
+        )}
       </Card>
     </div>
   );
