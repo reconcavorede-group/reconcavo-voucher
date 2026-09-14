@@ -11,7 +11,7 @@ function slugify(s: string): string {
 }
 
 export default function Locations() {
-  const { locations, reload, setLocationId } = useAdminLocation();
+  const { locations, reload, setLocationId, isAdmin } = useAdminLocation();
   const [rows, setRows] = useState<Loc[]>([]);
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
@@ -61,7 +61,8 @@ export default function Locations() {
 
   return (
     <div className="space-y-5" style={{ animation: "fadeUp .3s ease" }}>
-      {/* Novo local */}
+      {/* Novo local (só admin) */}
+      {isAdmin && (
       <div className="rounded-[20px] border border-[#3F9C45] bg-[#135B1D] p-6">
         <h3 className="mb-1 font-bold text-white">Novo local</h3>
         <p className="mb-4 text-sm text-[#B7E3B2]">Cada local é um MikroTik separado, com seu próprio estoque de vouchers e planos.</p>
@@ -87,6 +88,7 @@ export default function Locations() {
           </button>
         </div>
       </div>
+      )}
 
       {/* Lista */}
       <div className="space-y-2">
@@ -98,25 +100,29 @@ export default function Locations() {
             <div className="grid grid-cols-1 items-end gap-3 sm:grid-cols-[1.5fr_1fr_1fr_auto]">
               <div className="space-y-1">
                 <label className="text-xs text-[#49784C]">Nome</label>
-                <input className="min-h-[40px] w-full rounded-xl border border-[#C9DFC0] bg-[#F4F9F1] px-3 font-semibold text-[#135B1D] focus:outline-none focus-visible:ring-[3px] focus-visible:ring-[#1E8A2C]"
+                <input readOnly={!isAdmin} className="min-h-[40px] w-full rounded-xl border border-[#C9DFC0] bg-[#F4F9F1] px-3 font-semibold text-[#135B1D] read-only:opacity-70 focus:outline-none focus-visible:ring-[3px] focus-visible:ring-[#1E8A2C]"
                   value={r.name} onChange={(e) => patch(r.id, "name", e.target.value)} />
               </div>
               <div className="space-y-1">
                 <label className="text-xs text-[#49784C]">Slug</label>
-                <input className="min-h-[40px] w-full rounded-xl border border-[#C9DFC0] bg-[#F4F9F1] px-3 font-mono text-sm text-[#152B14] focus:outline-none focus-visible:ring-[3px] focus-visible:ring-[#1E8A2C]"
+                <input readOnly={!isAdmin} className="min-h-[40px] w-full rounded-xl border border-[#C9DFC0] bg-[#F4F9F1] px-3 font-mono text-sm text-[#152B14] read-only:opacity-70 focus:outline-none focus-visible:ring-[3px] focus-visible:ring-[#1E8A2C]"
                   value={r.slug} onChange={(e) => patch(r.id, "slug", e.target.value)} />
               </div>
               <div className="space-y-1">
                 <label className="text-xs text-[#49784C]">IP do gateway</label>
-                <input className="min-h-[40px] w-full rounded-xl border border-[#C9DFC0] bg-[#F4F9F1] px-3 font-mono text-sm text-[#152B14] focus:outline-none focus-visible:ring-[3px] focus-visible:ring-[#1E8A2C]"
+                <input readOnly={!isAdmin} className="min-h-[40px] w-full rounded-xl border border-[#C9DFC0] bg-[#F4F9F1] px-3 font-mono text-sm text-[#152B14] read-only:opacity-70 focus:outline-none focus-visible:ring-[3px] focus-visible:ring-[#1E8A2C]"
                   value={r.gateway_ip} onChange={(e) => patch(r.id, "gateway_ip", e.target.value)} />
               </div>
               <div className="flex items-center gap-2">
                 <label className="flex items-center gap-1.5 text-xs font-semibold text-[#49784C]">
-                  <input type="checkbox" checked={r.active} onChange={(e) => patch(r.id, "active", e.target.checked)} /> Ativo
+                  <input type="checkbox" disabled={!isAdmin} checked={r.active} onChange={(e) => patch(r.id, "active", e.target.checked)} /> Ativo
                 </label>
-                <button onClick={() => saveRow(r)} className="rounded-lg p-2 text-[#135B1D] transition hover:bg-[#E3F1DE]" title="Salvar"><Save className="h-4 w-4" /></button>
-                <button onClick={() => remove(r)} className="rounded-lg p-2 transition hover:bg-[#FDEEEA]" title="Remover"><Trash2 className="h-4 w-4 text-[#B4432E]" /></button>
+                {isAdmin && (
+                  <>
+                    <button onClick={() => saveRow(r)} className="rounded-lg p-2 text-[#135B1D] transition hover:bg-[#E3F1DE]" title="Salvar"><Save className="h-4 w-4" /></button>
+                    <button onClick={() => remove(r)} className="rounded-lg p-2 transition hover:bg-[#FDEEEA]" title="Remover"><Trash2 className="h-4 w-4 text-[#B4432E]" /></button>
+                  </>
+                )}
               </div>
             </div>
             <div className="mt-3 flex items-center gap-2 border-t border-[#EEF6EB] pt-3 text-xs text-[#6E9070]">

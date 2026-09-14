@@ -4,7 +4,7 @@ import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { AdminLogin } from "./AdminLogin";
 import { AdminLocationProvider, useAdminLocation } from "@/lib/adminLocation";
-import { Loader2, LogOut, ExternalLink, MapPin } from "lucide-react";
+import { Loader2, LogOut, ExternalLink, MapPin, Eye } from "lucide-react";
 
 const NAV = [
   { to: "/admin", label: "Dashboard", end: true, title: "Dashboard", sub: "Acompanhe a operação em tempo real" },
@@ -39,6 +39,7 @@ function LocationSelector() {
 
 function AdminShell() {
   const { pathname } = useLocation();
+  const { isAdmin } = useAdminLocation();
   const active = NAV.find((n) => (n.end ? pathname === n.to : pathname.startsWith(n.to))) ?? NAV[0];
   const showSelector = pathname !== "/admin/locations";
 
@@ -54,6 +55,11 @@ function AdminShell() {
             </span>
           </div>
           <div className="flex items-center gap-2">
+            {!isAdmin && (
+              <span className="hidden items-center gap-1.5 rounded-full border border-[#C9DFC0] bg-[#E9F4E5] px-3 py-1.5 text-xs font-semibold text-[#49784C] sm:flex">
+                <Eye className="h-3.5 w-3.5" /> Somente consulta
+              </span>
+            )}
             <Link to="/" className="hidden items-center gap-1 rounded-xl px-3 py-2 text-sm font-semibold text-[#1E8A2C] transition hover:bg-[#E3F1DE] sm:flex">
               Ver loja <ExternalLink className="h-3.5 w-3.5" />
             </Link>

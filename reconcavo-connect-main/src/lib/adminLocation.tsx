@@ -17,6 +17,7 @@ interface Ctx {
   current: Loc | null;
   reload: () => Promise<void>;
   loading: boolean;
+  isAdmin: boolean; // true = pode escrever; false = conta somente-consulta
 }
 
 const AdminLocationContext = createContext<Ctx | null>(null);
@@ -28,6 +29,7 @@ export function AdminLocationProvider({ children }: { children: ReactNode }) {
   const [locations, setLocations] = useState<Loc[]>([]);
   const [locationId, setLocationIdState] = useState<string | null>(() => localStorage.getItem(STORAGE_KEY));
   const [loading, setLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   const load = async () => {
     const { data } = await supabase.from("locations").select("*").order("sort_order");
@@ -37,7 +39,14 @@ export function AdminLocationProvider({ children }: { children: ReactNode }) {
     setLoading(false);
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+    // Descobre se o usuário logado é admin (pode escrever) ou viewer (consulta).
+    // `is_admin` não está nos tipos gerados; cast evita erro de TS no build.
+    (supabase.rpc as (fn: string) => Promise<{ data: unknown }>)("is_admin").then(
+      ({ data }) => setIsAdmin(data === true)
+    );
+  }, []);
 
   const setLocationId = (id: string) => {
     localStorage.setItem(STORAGE_KEY, id);
@@ -47,7 +56,7 @@ export function AdminLocationProvider({ children }: { children: ReactNode }) {
   const current = locations.find((l) => l.id === locationId) ?? null;
 
   return (
-    <AdminLocationContext.Provider value={{ locations, locationId, setLocationId, current, reload: load, loading }}>
+    <AdminLocationContext.Provider value={{ locations, locationId, setLocationId, current, reload: load, loading, isAdmin }}>
       {children}
     </AdminLocationContext.Provider>
   );

@@ -17,7 +17,7 @@ interface Plan {
 }
 
 export default function Settings() {
-  const { locationId, current } = useAdminLocation();
+  const { locationId, current, isAdmin } = useAdminLocation();
   const [plans, setPlans] = useState<Plan[]>([]);
   const [name, setName] = useState("");
   const [minutes, setMinutes] = useState(60);
@@ -73,7 +73,8 @@ export default function Settings() {
 
   return (
     <div className="space-y-5" style={{ animation: "fadeUp .3s ease" }}>
-      {/* Painel escuro: novo plano */}
+      {/* Painel escuro: novo plano (só admin) */}
+      {isAdmin && (
       <div className="rounded-[20px] border border-[#3F9C45] bg-[#135B1D] p-6">
         <h3 className="mb-4 font-bold text-white">Novo plano</h3>
         <div className="grid grid-cols-1 items-end gap-3 sm:grid-cols-[2fr_1fr_1fr_1.5fr_auto]">
@@ -87,6 +88,7 @@ export default function Settings() {
           </button>
         </div>
       </div>
+      )}
 
       {/* Lista de planos */}
       <div className="space-y-2">
@@ -96,20 +98,31 @@ export default function Settings() {
               <p className="text-lg font-extrabold text-[#135B1D]">{p.plan_name}</p>
               <p className="text-sm text-[#49784C]">{p.duration_minutes} min · {formatBRL(Number(p.price))}</p>
             </div>
-            <div className="flex items-center gap-2 sm:w-72">
-              <input
-                value={p.mikrotik_profile ?? ""}
-                onChange={(e) => updateProfile(p.id, e.target.value)}
-                placeholder="profile MikroTik"
-                className="min-h-[40px] w-full rounded-xl border border-[#C9DFC0] bg-[#F4F9F1] px-3 font-mono text-sm text-[#152B14] focus:outline-none focus-visible:ring-[3px] focus-visible:ring-[#1E8A2C]"
-              />
-              <button onClick={() => saveProfile(p)} title="Salvar profile" className="rounded-lg p-2 text-[#135B1D] transition hover:bg-[#E3F1DE]"><Save className="h-4 w-4" /></button>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-semibold text-[#49784C]">Ativo</span>
-              <Switch checked={p.active} onCheckedChange={() => toggle(p)} />
-              <button onClick={() => remove(p.id)} className="rounded-lg p-2 transition hover:bg-[#FDEEEA]"><Trash2 className="h-4 w-4 text-[#B4432E]" /></button>
-            </div>
+            {isAdmin ? (
+              <>
+                <div className="flex items-center gap-2 sm:w-72">
+                  <input
+                    value={p.mikrotik_profile ?? ""}
+                    onChange={(e) => updateProfile(p.id, e.target.value)}
+                    placeholder="profile MikroTik"
+                    className="min-h-[40px] w-full rounded-xl border border-[#C9DFC0] bg-[#F4F9F1] px-3 font-mono text-sm text-[#152B14] focus:outline-none focus-visible:ring-[3px] focus-visible:ring-[#1E8A2C]"
+                  />
+                  <button onClick={() => saveProfile(p)} title="Salvar profile" className="rounded-lg p-2 text-[#135B1D] transition hover:bg-[#E3F1DE]"><Save className="h-4 w-4" /></button>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-semibold text-[#49784C]">Ativo</span>
+                  <Switch checked={p.active} onCheckedChange={() => toggle(p)} />
+                  <button onClick={() => remove(p.id)} className="rounded-lg p-2 transition hover:bg-[#FDEEEA]"><Trash2 className="h-4 w-4 text-[#B4432E]" /></button>
+                </div>
+              </>
+            ) : (
+              <div className="flex items-center gap-3 sm:w-72">
+                <code className="font-mono text-sm text-[#49784C]">{p.mikrotik_profile ?? "—"}</code>
+                <span className={`ml-auto rounded-full px-2.5 py-0.5 text-xs font-semibold ${p.active ? "bg-[#E3F5DC] text-[#1E6B26]" : "bg-[#F0E2B6] text-[#8A6D1A]"}`}>
+                  {p.active ? "Ativo" : "Inativo"}
+                </span>
+              </div>
+            )}
           </div>
         ))}
       </div>
