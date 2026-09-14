@@ -15,6 +15,8 @@ interface Sale {
   id: string; plan_name: string; amount: number; payment_method: string; status: string;
   created_at: string; completed_at: string | null; customer_name: string | null;
   customer_phone: string | null; voucher_id: string | null; duration_minutes: number;
+  // Junção com o voucher: MAC do aparelho que efetivamente usou o código.
+  vouchers: { mac_address: string | null; activated_at: string | null } | null;
 }
 
 // A confirmação de pagamento é 100% automática (webhook do Mercado Pago). Esta
@@ -36,19 +38,20 @@ export default function Sales() {
 
   const load = async () => {
     if (!locationId) return;
-    const { data } = await supabase.from("payments").select("*").eq("location_id", locationId).order("created_at", { ascending: false }).limit(500);
+    const { data } = await supabase.from("payments").select("*, vouchers(mac_address, activated_at)").eq("location_id", locationId).order("created_at", { ascending: false }).limit(500);
     setSales((data ?? []) as Sale[]);
   };
 
   const filtered = filter === "all" ? sales : sales.filter((s) => s.status === filter);
 
   const exportCSV = () => {
-    const header = ["ID", "Data", "Cliente", "Telefone", "Plano", "Valor", "Método", "Status", "Confirmado em"];
+    const header = ["ID", "Data", "Cliente", "Telefone", "Plano", "Valor", "Método", "Status", "Confirmado em", "Dispositivo (MAC)"];
     const rows = filtered.map((s) => [
       s.id, new Date(s.created_at).toLocaleString("pt-BR"), s.customer_name ?? "",
       s.customer_phone ?? "", s.plan_name, Number(s.amount).toFixed(2),
       s.payment_method, statusLabel(s.status),
       s.completed_at ? new Date(s.completed_at).toLocaleString("pt-BR") : "",
+      s.vouchers?.mac_address ?? "",
     ]);
     const csv = [header, ...rows].map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\n");
     const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8" });
@@ -99,12 +102,13 @@ export default function Sales() {
                 <th className="px-4 py-3 font-semibold">Valor</th>
                 <th className="px-4 py-3 font-semibold">Método</th>
                 <th className="px-4 py-3 font-semibold">Status</th>
+                <th className="px-4 py-3 font-semibold">Dispositivo</th>
                 <th className="px-4 py-3 text-right font-semibold">Ações</th>
               </tr>
             </thead>
             <tbody>
               {filtered.length === 0 && (
-                <tr><td colSpan={7} className="py-10 text-center text-[#6E9070]">Nenhuma venda</td></tr>
+                <tr><td colSpan={8} className="py-10 text-center text-[#6E9070]">Nenhuma venda</td></tr>
               )}
               {filtered.map((s) => (
                 <tr key={s.id} className="border-b border-[#EEF6EB] transition hover:bg-[#F7FBF4]">
@@ -114,6 +118,7 @@ export default function Sales() {
                   <td className="px-4 py-3 font-semibold text-[#135B1D]">{formatBRL(Number(s.amount))}</td>
                   <td className="px-4 py-3 text-xs uppercase text-[#49784C]">{s.payment_method}</td>
                   <td className="px-4 py-3"><StatusBadge status={s.status} /></td>
+                  <td className="px-4 py-3 font-mono text-xs text-[#49784C]">{s.vouchers?.mac_address ?? "—"}</td>
                   <td className="px-4 py-3 text-right">
                     <Link to={`/order/${s.id}`} target="_blank" className="inline-flex rounded-lg p-2 text-[#135B1D] transition hover:bg-[#E3F1DE]"><Eye className="h-4 w-4" /></Link>
                   </td>

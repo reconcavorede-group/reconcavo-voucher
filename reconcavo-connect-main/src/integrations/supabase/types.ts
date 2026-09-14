@@ -242,6 +242,7 @@ export type Database = {
           id: string
           imported_at: string | null
           location_id: string | null
+          mac_address: string | null
           mikrotik_error: string | null
           mikrotik_profile: string | null
           mikrotik_synced: boolean
@@ -261,6 +262,7 @@ export type Database = {
           id?: string
           imported_at?: string | null
           location_id?: string | null
+          mac_address?: string | null
           mikrotik_error?: string | null
           mikrotik_profile?: string | null
           mikrotik_synced?: boolean
@@ -280,6 +282,7 @@ export type Database = {
           id?: string
           imported_at?: string | null
           location_id?: string | null
+          mac_address?: string | null
           mikrotik_error?: string | null
           mikrotik_profile?: string | null
           mikrotik_synced?: boolean
