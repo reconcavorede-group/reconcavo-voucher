@@ -5,43 +5,79 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { formatBRL } from "@/lib/voucher";
 
-interface Row { local: string; vendas: number; valor: number }
+interface Pay { location_id: string | null; amount: number; plan_name: string; when: number }
+interface Row { nome: string; vendas: number; valor: number }
 
-// Cores por ponto de venda — a mesma cor identifica o local nos dois gráficos.
+// Cores — mesma cor identifica o item (local/plano) nos gráficos.
 const PALETTE = ["#135B1D", "#2E8B3D", "#7CB342", "#1E8A2C", "#49784C", "#A8D06A"];
+const PLAN_ORDER = ["1 hora", "2 horas", "24 horas", "7 dias", "30 dias"];
+
+type Period = "hoje" | "7d" | "30d" | "tudo";
+const PERIODS: [Period, string][] = [["hoje", "Hoje"], ["7d", "7 dias"], ["30d", "30 dias"], ["tudo", "Tudo"]];
 
 export default function Charts() {
-  const [rows, setRows] = useState<Row[]>([]);
+  const [locName, setLocName] = useState<Map<string, string>>(new Map());
+  const [pays, setPays] = useState<Pay[]>([]);
   const [loading, setLoading] = useState(true);
+  const [period, setPeriod] = useState<Period>("tudo");
 
   useEffect(() => { document.title = "Gráficos — Recôncavo Voucher"; }, []);
 
   useEffect(() => {
     (async () => {
-      // Comparativo entre TODOS os pontos (não filtra pelo local selecionado).
-      const [{ data: locs }, { data: pays }] = await Promise.all([
+      const [{ data: locs }, { data: p }] = await Promise.all([
         supabase.from("locations").select("id, name").order("sort_order"),
-        supabase.from("payments").select("location_id, amount").eq("status", "completed").limit(5000),
+        supabase.from("payments").select("location_id, amount, plan_name, completed_at, created_at").eq("status", "completed").limit(5000),
       ]);
-      const nameById = new Map((locs ?? []).map((l) => [l.id, l.name]));
-      const agg = new Map<string, Row>();
-      for (const l of locs ?? []) agg.set(l.id, { local: l.name, vendas: 0, valor: 0 });
-      for (const p of pays ?? []) {
-        const key = (p as { location_id: string | null }).location_id ?? "sem";
-        const r = agg.get(key) ?? { local: nameById.get(key) ?? "Sem local", vendas: 0, valor: 0 };
-        r.vendas += 1;
-        r.valor += Number((p as { amount: number }).amount) || 0;
-        agg.set(key, r);
-      }
-      setRows(Array.from(agg.values()));
+      setLocName(new Map((locs ?? []).map((l) => [l.id, l.name])));
+      setPays((p ?? []).map((r) => {
+        const d = (r as { completed_at: string | null; created_at: string }).completed_at ?? (r as { created_at: string }).created_at;
+        return {
+          location_id: (r as { location_id: string | null }).location_id,
+          amount: Number((r as { amount: number }).amount) || 0,
+          plan_name: (r as { plan_name: string }).plan_name ?? "—",
+          when: d ? new Date(d).getTime() : 0,
+        };
+      }));
       setLoading(false);
     })();
   }, []);
 
-  const totalVendas = useMemo(() => rows.reduce((s, r) => s + r.vendas, 0), [rows]);
-  const totalValor = useMemo(() => rows.reduce((s, r) => s + r.valor, 0), [rows]);
+  // Filtra pelo período escolhido (usa a data da venda).
+  const filtered = useMemo(() => {
+    if (period === "tudo") return pays;
+    const now = new Date();
+    let from = 0;
+    if (period === "hoje") { const d = new Date(now); d.setHours(0, 0, 0, 0); from = d.getTime(); }
+    else if (period === "7d") from = now.getTime() - 7 * 864e5;
+    else if (period === "30d") from = now.getTime() - 30 * 864e5;
+    return pays.filter((p) => p.when >= from);
+  }, [pays, period]);
 
-  // Encurta o nome do local no eixo (ex.: "Feira Livre - Praça do Mercado" -> "Feira Livre").
+  const byLocation = useMemo<Row[]>(() => {
+    const agg = new Map<string, Row>();
+    for (const p of filtered) {
+      const nome = locName.get(p.location_id ?? "") ?? "Sem local";
+      const r = agg.get(nome) ?? { nome, vendas: 0, valor: 0 };
+      r.vendas += 1; r.valor += p.amount; agg.set(nome, r);
+    }
+    return Array.from(agg.values()).sort((a, b) => b.vendas - a.vendas);
+  }, [filtered, locName]);
+
+  const byPlan = useMemo<Row[]>(() => {
+    const agg = new Map<string, Row>();
+    for (const p of filtered) {
+      const r = agg.get(p.plan_name) ?? { nome: p.plan_name, vendas: 0, valor: 0 };
+      r.vendas += 1; r.valor += p.amount; agg.set(p.plan_name, r);
+    }
+    return Array.from(agg.values()).sort((a, b) => {
+      const ia = PLAN_ORDER.indexOf(a.nome), ib = PLAN_ORDER.indexOf(b.nome);
+      return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
+    });
+  }, [filtered]);
+
+  const totalVendas = filtered.length;
+  const totalValor = useMemo(() => filtered.reduce((s, p) => s + p.amount, 0), [filtered]);
   const shortName = (s: string) => s.split(" - ")[0];
 
   if (loading) {
@@ -50,6 +86,18 @@ export default function Charts() {
 
   return (
     <div className="space-y-5" style={{ animation: "fadeUp .3s ease" }}>
+      {/* Filtro de período */}
+      <div className="flex flex-wrap gap-2">
+        {PERIODS.map(([val, label]) => (
+          <button key={val} onClick={() => setPeriod(val)}
+            className={`rounded-full px-3.5 py-2 text-sm font-semibold transition ${
+              period === val ? "bg-[#135B1D] text-white" : "border border-[#D8E9D3] bg-white text-[#49784C] hover:bg-[#E3F1DE]"
+            }`}>
+            {label}
+          </button>
+        ))}
+      </div>
+
       {/* Totais */}
       <div className="grid grid-cols-2 gap-4">
         <div className="rounded-[20px] border-2 border-[#D8E9D3] bg-white p-5">
@@ -62,36 +110,55 @@ export default function Charts() {
         </div>
       </div>
 
-      {/* Vendas por ponto */}
-      <ChartCard title="Vendas por ponto de venda" subtitle="Quantidade de vendas pagas em cada local">
-        <BarChart data={rows} margin={{ top: 8, right: 12, left: -8, bottom: 4 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#EAF2E6" vertical={false} />
-          <XAxis dataKey="local" tickFormatter={shortName} tick={{ fontSize: 12, fill: "#49784C" }} axisLine={{ stroke: "#D8E9D3" }} tickLine={false} />
-          <YAxis allowDecimals={false} tick={{ fontSize: 12, fill: "#49784C" }} axisLine={false} tickLine={false} width={32} />
-          <Tooltip cursor={{ fill: "#F4F9F1" }}
-            formatter={(v: number) => [v, "Vendas"]}
-            contentStyle={{ borderRadius: 12, border: "1px solid #D8E9D3", fontSize: 13 }} />
-          <Bar dataKey="vendas" radius={[8, 8, 0, 0]} maxBarSize={64}>
-            {rows.map((_, i) => <Cell key={i} fill={PALETTE[i % PALETTE.length]} />)}
-          </Bar>
-        </BarChart>
-      </ChartCard>
+      {totalVendas === 0 && (
+        <div className="rounded-[20px] border-2 border-dashed border-[#D8E9D3] bg-white p-8 text-center text-[#6E9070]">
+          Nenhuma venda no período selecionado.
+        </div>
+      )}
 
-      {/* Faturamento por ponto */}
-      <ChartCard title="Faturamento por ponto de venda" subtitle="Valor total vendido (R$) em cada local">
-        <BarChart data={rows} margin={{ top: 8, right: 12, left: 4, bottom: 4 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#EAF2E6" vertical={false} />
-          <XAxis dataKey="local" tickFormatter={shortName} tick={{ fontSize: 12, fill: "#49784C" }} axisLine={{ stroke: "#D8E9D3" }} tickLine={false} />
-          <YAxis tick={{ fontSize: 12, fill: "#49784C" }} axisLine={false} tickLine={false} width={54}
-            tickFormatter={(v: number) => `R$${v}`} />
-          <Tooltip cursor={{ fill: "#F4F9F1" }}
-            formatter={(v: number) => [formatBRL(Number(v)), "Faturamento"]}
-            contentStyle={{ borderRadius: 12, border: "1px solid #D8E9D3", fontSize: 13 }} />
-          <Bar dataKey="valor" radius={[8, 8, 0, 0]} maxBarSize={64}>
-            {rows.map((_, i) => <Cell key={i} fill={PALETTE[i % PALETTE.length]} />)}
-          </Bar>
-        </BarChart>
-      </ChartCard>
+      {totalVendas > 0 && (
+        <>
+          <ChartCard title="Vendas por ponto de venda" subtitle="Quantidade de vendas pagas em cada local">
+            <BarChart data={byLocation} margin={{ top: 8, right: 12, left: -8, bottom: 4 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#EAF2E6" vertical={false} />
+              <XAxis dataKey="nome" tickFormatter={shortName} tick={{ fontSize: 12, fill: "#49784C" }} axisLine={{ stroke: "#D8E9D3" }} tickLine={false} />
+              <YAxis allowDecimals={false} tick={{ fontSize: 12, fill: "#49784C" }} axisLine={false} tickLine={false} width={32} />
+              <Tooltip cursor={{ fill: "#F4F9F1" }} formatter={(v: number) => [v, "Vendas"]}
+                contentStyle={{ borderRadius: 12, border: "1px solid #D8E9D3", fontSize: 13 }} />
+              <Bar dataKey="vendas" radius={[8, 8, 0, 0]} maxBarSize={64}>
+                {byLocation.map((_, i) => <Cell key={i} fill={PALETTE[i % PALETTE.length]} />)}
+              </Bar>
+            </BarChart>
+          </ChartCard>
+
+          <ChartCard title="Faturamento por ponto de venda" subtitle="Valor total vendido (R$) em cada local">
+            <BarChart data={byLocation} margin={{ top: 8, right: 12, left: 4, bottom: 4 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#EAF2E6" vertical={false} />
+              <XAxis dataKey="nome" tickFormatter={shortName} tick={{ fontSize: 12, fill: "#49784C" }} axisLine={{ stroke: "#D8E9D3" }} tickLine={false} />
+              <YAxis tick={{ fontSize: 12, fill: "#49784C" }} axisLine={false} tickLine={false} width={54} tickFormatter={(v: number) => `R$${v}`} />
+              <Tooltip cursor={{ fill: "#F4F9F1" }} formatter={(v: number) => [formatBRL(Number(v)), "Faturamento"]}
+                contentStyle={{ borderRadius: 12, border: "1px solid #D8E9D3", fontSize: 13 }} />
+              <Bar dataKey="valor" radius={[8, 8, 0, 0]} maxBarSize={64}>
+                {byLocation.map((_, i) => <Cell key={i} fill={PALETTE[i % PALETTE.length]} />)}
+              </Bar>
+            </BarChart>
+          </ChartCard>
+
+          <ChartCard title="Vendas por plano" subtitle="Quais planos mais vendem (todos os locais)">
+            <BarChart data={byPlan} margin={{ top: 8, right: 12, left: -8, bottom: 4 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#EAF2E6" vertical={false} />
+              <XAxis dataKey="nome" tick={{ fontSize: 12, fill: "#49784C" }} axisLine={{ stroke: "#D8E9D3" }} tickLine={false} />
+              <YAxis allowDecimals={false} tick={{ fontSize: 12, fill: "#49784C" }} axisLine={false} tickLine={false} width={32} />
+              <Tooltip cursor={{ fill: "#F4F9F1" }}
+                formatter={(v: number, _n, p) => [`${v} venda(s) · ${formatBRL((p?.payload as Row)?.valor ?? 0)}`, "Plano"]}
+                contentStyle={{ borderRadius: 12, border: "1px solid #D8E9D3", fontSize: 13 }} />
+              <Bar dataKey="vendas" radius={[8, 8, 0, 0]} maxBarSize={64}>
+                {byPlan.map((_, i) => <Cell key={i} fill={PALETTE[i % PALETTE.length]} />)}
+              </Bar>
+            </BarChart>
+          </ChartCard>
+        </>
+      )}
     </div>
   );
 }
