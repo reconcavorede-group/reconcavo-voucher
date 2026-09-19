@@ -20,10 +20,11 @@ const PERIODS: [Period, string][] = [["hoje", "Hoje"], ["7d", "7 dias"], ["30d",
 export default function Charts() {
   const [locName, setLocName] = useState<Map<string, string>>(new Map());
   const [pays, setPays] = useState<Pay[]>([]);
-  const [stock, setStock] = useState<{ nome: string; qtd: number }[]>([]); // estoque atual (disponível)
+  const [stockRows, setStockRows] = useState<{ loc: string; plano: string }[]>([]); // vouchers disponíveis (estoque atual)
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState<Period>("tudo");
-  const [planLoc, setPlanLoc] = useState<string>(""); // "" = todos os locais (gráfico Vendas por plano)
+  const [planLoc, setPlanLoc] = useState<string>(""); // "" = todos os locais (gráficos Vendas/Faturamento por plano)
+  const [stockLoc, setStockLoc] = useState<string>(""); // "" = todos os locais (gráfico Estoque por plano)
 
   useEffect(() => { document.title = "Gráficos — Recôncavo Voucher"; }, []);
 
@@ -32,15 +33,15 @@ export default function Charts() {
       const [{ data: locs }, { data: p }, { data: vs }] = await Promise.all([
         supabase.from("locations").select("id, name").order("sort_order"),
         supabase.from("payments").select("location_id, amount, plan_name, completed_at, created_at").eq("status", "completed").limit(5000),
-        supabase.from("vouchers").select("location_id").eq("status", "disponivel").limit(5000),
+        supabase.from("vouchers").select("location_id, duration_type").eq("status", "disponivel").limit(5000),
       ]);
       const nameMap = new Map((locs ?? []).map((l) => [l.id, l.name]));
       setLocName(nameMap);
-      // Estoque disponível por local (dado atual — não depende do período).
-      const st = new Map<string, number>();
-      for (const l of locs ?? []) st.set(l.id, 0);
-      for (const v of vs ?? []) { const k = (v as { location_id: string | null }).location_id ?? "sem"; st.set(k, (st.get(k) ?? 0) + 1); }
-      setStock([...st.entries()].map(([id, qtd]) => ({ nome: nameMap.get(id) ?? "Sem local", qtd })).sort((a, b) => b.qtd - a.qtd));
+      // Vouchers disponíveis (estoque atual) — guarda cru p/ agregar por ponto e por plano.
+      setStockRows((vs ?? []).map((v) => ({
+        loc: (v as { location_id: string | null }).location_id ?? "sem",
+        plano: (v as { duration_type: string }).duration_type ?? "—",
+      })));
       setPays((p ?? []).map((r) => {
         const d = (r as { completed_at: string | null; created_at: string }).completed_at ?? (r as { created_at: string }).created_at;
         return {
@@ -112,22 +113,41 @@ export default function Charts() {
     return out;
   }, [filtered, period]);
 
+  // Estoque (vouchers disponíveis) por ponto e por plano — dado atual, sem período.
+  const stockByLocation = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const [id] of locName) m.set(id, 0);
+    for (const r of stockRows) m.set(r.loc, (m.get(r.loc) ?? 0) + 1);
+    return [...m.entries()].map(([id, qtd]) => ({ nome: locName.get(id) ?? "Sem local", qtd })).sort((a, b) => b.qtd - a.qtd);
+  }, [stockRows, locName]);
+
+  const stockByPlan = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const r of stockRows) { if (stockLoc && r.loc !== stockLoc) continue; m.set(r.plano, (m.get(r.plano) ?? 0) + 1); }
+    return [...m.entries()].map(([plano, qtd]) => ({ nome: plano, qtd })).sort((a, b) => {
+      const ia = PLAN_ORDER.indexOf(a.nome), ib = PLAN_ORDER.indexOf(b.nome);
+      return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
+    });
+  }, [stockRows, stockLoc]);
+
   const totalVendas = filtered.length;
   const totalValor = useMemo(() => filtered.reduce((s, p) => s + p.amount, 0), [filtered]);
   const shortName = (s: string) => s.split(" - ")[0];
 
-  // Seletor de ponto compartilhado pelos gráficos "por plano".
-  const pontoSelector = (
+  // Seletor de ponto reutilizável (recebe o valor e o setter do estado).
+  const pontoSelectorFor = (value: string, setValue: (v: string) => void) => (
     <label className="inline-flex items-center gap-2 rounded-full border border-[#D8E9D3] bg-[#F4F9F1] px-3 py-1.5 text-sm">
       <span className="font-semibold text-[#49784C]">Ponto:</span>
-      <select value={planLoc} onChange={(e) => setPlanLoc(e.target.value)}
+      <select value={value} onChange={(e) => setValue(e.target.value)}
         className="cursor-pointer bg-transparent font-bold text-[#135B1D] focus:outline-none">
         <option value="">Todos os locais</option>
         {[...locName.entries()].map(([id, name]) => (<option key={id} value={id}>{name}</option>))}
       </select>
     </label>
   );
-  const planoSub = (base: string) => planLoc ? `${base} em ${shortName(locName.get(planLoc) ?? "")}` : `${base} (todos os locais)`;
+  const pontoSelector = pontoSelectorFor(planLoc, setPlanLoc);
+  const localSub = (base: string, id: string) => id ? `${base} em ${shortName(locName.get(id) ?? "")}` : `${base} (todos os locais)`;
+  const planoSub = (base: string) => localSub(base, planLoc);
 
   if (loading) {
     return <div className="rounded-[20px] border-2 border-[#D8E9D3] bg-white p-10 text-center text-[#6E9070]">Carregando gráficos…</div>;
@@ -257,14 +277,29 @@ export default function Charts() {
 
       {/* Estoque atual — independente do período/vendas */}
       <ChartCard title="Vouchers em estoque por ponto" subtitle="Quantidade de vouchers disponíveis agora em cada local (não depende do período)">
-        <BarChart data={stock} margin={{ top: 8, right: 12, left: -8, bottom: 4 }}>
+        <BarChart data={stockByLocation} margin={{ top: 8, right: 12, left: -8, bottom: 4 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#EAF2E6" vertical={false} />
           <XAxis dataKey="nome" tickFormatter={shortName} tick={{ fontSize: 12, fill: "#49784C" }} axisLine={{ stroke: "#D8E9D3" }} tickLine={false} />
           <YAxis allowDecimals={false} tick={{ fontSize: 12, fill: "#49784C" }} axisLine={false} tickLine={false} width={36} />
           <Tooltip cursor={{ fill: "#F4F9F1" }} formatter={(v: number) => [`${v} voucher(s)`, "Estoque"]}
             contentStyle={{ borderRadius: 12, border: "1px solid #D8E9D3", fontSize: 13 }} />
           <Bar dataKey="qtd" radius={[8, 8, 0, 0]} maxBarSize={64}>
-            {stock.map((_, i) => <Cell key={i} fill={PALETTE[i % PALETTE.length]} />)}
+            {stockByLocation.map((_, i) => <Cell key={i} fill={PALETTE[i % PALETTE.length]} />)}
+          </Bar>
+        </BarChart>
+      </ChartCard>
+
+      <ChartCard title="Vouchers em estoque por plano"
+        subtitle={localSub("Disponíveis agora por plano", stockLoc)}
+        action={pontoSelectorFor(stockLoc, setStockLoc)}>
+        <BarChart data={stockByPlan} margin={{ top: 8, right: 12, left: -8, bottom: 4 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="#EAF2E6" vertical={false} />
+          <XAxis dataKey="nome" tick={{ fontSize: 12, fill: "#49784C" }} axisLine={{ stroke: "#D8E9D3" }} tickLine={false} />
+          <YAxis allowDecimals={false} tick={{ fontSize: 12, fill: "#49784C" }} axisLine={false} tickLine={false} width={36} />
+          <Tooltip cursor={{ fill: "#F4F9F1" }} formatter={(v: number) => [`${v} voucher(s)`, "Estoque"]}
+            contentStyle={{ borderRadius: 12, border: "1px solid #D8E9D3", fontSize: 13 }} />
+          <Bar dataKey="qtd" radius={[8, 8, 0, 0]} maxBarSize={64}>
+            {stockByPlan.map((_, i) => <Cell key={i} fill={PALETTE[i % PALETTE.length]} />)}
           </Bar>
         </BarChart>
       </ChartCard>
