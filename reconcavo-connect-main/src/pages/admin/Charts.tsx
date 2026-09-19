@@ -21,6 +21,7 @@ export default function Charts() {
   const [pays, setPays] = useState<Pay[]>([]);
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState<Period>("tudo");
+  const [planLoc, setPlanLoc] = useState<string>(""); // "" = todos os locais (gráfico Vendas por plano)
 
   useEffect(() => { document.title = "Gráficos — Recôncavo Voucher"; }, []);
 
@@ -68,6 +69,7 @@ export default function Charts() {
   const byPlan = useMemo<Row[]>(() => {
     const agg = new Map<string, Row>();
     for (const p of filtered) {
+      if (planLoc && (p.location_id ?? "") !== planLoc) continue; // filtra por ponto (se selecionado)
       const r = agg.get(p.plan_name) ?? { nome: p.plan_name, vendas: 0, valor: 0 };
       r.vendas += 1; r.valor += p.amount; agg.set(p.plan_name, r);
     }
@@ -75,7 +77,7 @@ export default function Charts() {
       const ia = PLAN_ORDER.indexOf(a.nome), ib = PLAN_ORDER.indexOf(b.nome);
       return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
     });
-  }, [filtered]);
+  }, [filtered, planLoc]);
 
   // Vendas por dia — preenche os dias sem venda com 0 dentro do período.
   const byDay = useMemo(() => {
@@ -167,7 +169,20 @@ export default function Charts() {
             </BarChart>
           </ChartCard>
 
-          <ChartCard title="Vendas por plano" subtitle="Quais planos mais vendem (todos os locais)">
+          <ChartCard title="Vendas por plano"
+            subtitle={planLoc ? `Planos mais vendidos em ${shortName(locName.get(planLoc) ?? "")}` : "Quais planos mais vendem (todos os locais)"}
+            action={
+              <label className="inline-flex items-center gap-2 rounded-full border border-[#D8E9D3] bg-[#F4F9F1] px-3 py-1.5 text-sm">
+                <span className="font-semibold text-[#49784C]">Ponto:</span>
+                <select value={planLoc} onChange={(e) => setPlanLoc(e.target.value)}
+                  className="cursor-pointer bg-transparent font-bold text-[#135B1D] focus:outline-none">
+                  <option value="">Todos os locais</option>
+                  {[...locName.entries()].map(([id, name]) => (
+                    <option key={id} value={id}>{name}</option>
+                  ))}
+                </select>
+              </label>
+            }>
             <BarChart data={byPlan} margin={{ top: 8, right: 12, left: -8, bottom: 4 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#EAF2E6" vertical={false} />
               <XAxis dataKey="nome" tick={{ fontSize: 12, fill: "#49784C" }} axisLine={{ stroke: "#D8E9D3" }} tickLine={false} />
@@ -204,11 +219,16 @@ export default function Charts() {
   );
 }
 
-function ChartCard({ title, subtitle, children }: { title: string; subtitle: string; children: React.ReactElement }) {
+function ChartCard({ title, subtitle, children, action }: { title: string; subtitle: string; children: React.ReactElement; action?: React.ReactNode }) {
   return (
     <div className="rounded-[20px] border-2 border-[#D8E9D3] bg-white p-5">
-      <h3 className="font-bold text-[#135B1D]">{title}</h3>
-      <p className="mb-4 text-sm text-[#49784C]">{subtitle}</p>
+      <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h3 className="font-bold text-[#135B1D]">{title}</h3>
+          <p className="text-sm text-[#49784C]">{subtitle}</p>
+        </div>
+        {action}
+      </div>
       <div className="h-[280px] w-full">
         <ResponsiveContainer width="100%" height="100%">{children}</ResponsiveContainer>
       </div>
