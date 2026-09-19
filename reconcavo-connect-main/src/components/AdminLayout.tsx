@@ -10,6 +10,7 @@ const NAV = [
   { to: "/admin", label: "Dashboard", end: true, title: "Dashboard", sub: "Acompanhe a operação em tempo real" },
   { to: "/admin/vouchers", label: "Vouchers", title: "Vouchers", sub: "Gere lotes e gerencie o estoque do MikroTik" },
   { to: "/admin/sales", label: "Vendas", title: "Vendas", sub: "Histórico de pedidos e faturamento" },
+  { to: "/admin/charts", label: "Gráficos", title: "Gráficos", sub: "Comparativo de vendas e faturamento entre os pontos" },
   { to: "/admin/settings", label: "Planos", title: "Planos", sub: "Configure os planos exibidos na loja" },
   { to: "/admin/mikrotik", label: "MikroTik", title: "MikroTik", sub: "Importação e limpeza de usuários do roteador" },
   { to: "/admin/locations", label: "Locais", title: "Locais", sub: "Gerencie seus pontos de Wi-Fi (MikroTiks)" },
@@ -41,7 +42,8 @@ function AdminShell() {
   const { pathname } = useLocation();
   const { isAdmin } = useAdminLocation();
   const active = NAV.find((n) => (n.end ? pathname === n.to : pathname.startsWith(n.to))) ?? NAV[0];
-  const showSelector = pathname !== "/admin/locations";
+  // O seletor de local não aparece em Locais (global) nem em Gráficos (compara todos).
+  const showSelector = pathname !== "/admin/locations" && pathname !== "/admin/charts";
 
   return (
     <div className="min-h-screen bg-[#F4F9F1] text-[#152B14]">

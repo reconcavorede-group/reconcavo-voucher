@@ -14,6 +14,7 @@ import Sales from "./pages/admin/Sales";
 import Settings from "./pages/admin/Settings";
 import Mikrotik from "./pages/admin/Mikrotik";
 import Locations from "./pages/admin/Locations";
+import Charts from "./pages/admin/Charts";
 
 const queryClient = new QueryClient();
 
@@ -34,6 +35,7 @@ const App = () => (
             <Route path="settings" element={<Settings />} />
             <Route path="mikrotik" element={<Mikrotik />} />
             <Route path="locations" element={<Locations />} />
+            <Route path="charts" element={<Charts />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>
