@@ -19,6 +19,7 @@ const PERIODS: [Period, string][] = [["hoje", "Hoje"], ["7d", "7 dias"], ["30d",
 export default function Charts() {
   const [locName, setLocName] = useState<Map<string, string>>(new Map());
   const [pays, setPays] = useState<Pay[]>([]);
+  const [stock, setStock] = useState<{ nome: string; qtd: number }[]>([]); // estoque atual (disponível)
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState<Period>("tudo");
   const [planLoc, setPlanLoc] = useState<string>(""); // "" = todos os locais (gráfico Vendas por plano)
@@ -27,11 +28,18 @@ export default function Charts() {
 
   useEffect(() => {
     (async () => {
-      const [{ data: locs }, { data: p }] = await Promise.all([
+      const [{ data: locs }, { data: p }, { data: vs }] = await Promise.all([
         supabase.from("locations").select("id, name").order("sort_order"),
         supabase.from("payments").select("location_id, amount, plan_name, completed_at, created_at").eq("status", "completed").limit(5000),
+        supabase.from("vouchers").select("location_id").eq("status", "disponivel").limit(5000),
       ]);
-      setLocName(new Map((locs ?? []).map((l) => [l.id, l.name])));
+      const nameMap = new Map((locs ?? []).map((l) => [l.id, l.name]));
+      setLocName(nameMap);
+      // Estoque disponível por local (dado atual — não depende do período).
+      const st = new Map<string, number>();
+      for (const l of locs ?? []) st.set(l.id, 0);
+      for (const v of vs ?? []) { const k = (v as { location_id: string | null }).location_id ?? "sem"; st.set(k, (st.get(k) ?? 0) + 1); }
+      setStock([...st.entries()].map(([id, qtd]) => ({ nome: nameMap.get(id) ?? "Sem local", qtd })).sort((a, b) => b.qtd - a.qtd));
       setPays((p ?? []).map((r) => {
         const d = (r as { completed_at: string | null; created_at: string }).completed_at ?? (r as { created_at: string }).created_at;
         return {
@@ -245,6 +253,20 @@ export default function Charts() {
           </ChartCard>
         </>
       )}
+
+      {/* Estoque atual — independente do período/vendas */}
+      <ChartCard title="Vouchers em estoque por ponto" subtitle="Quantidade de vouchers disponíveis agora em cada local (não depende do período)">
+        <BarChart data={stock} margin={{ top: 8, right: 12, left: -8, bottom: 4 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="#EAF2E6" vertical={false} />
+          <XAxis dataKey="nome" tickFormatter={shortName} tick={{ fontSize: 12, fill: "#49784C" }} axisLine={{ stroke: "#D8E9D3" }} tickLine={false} />
+          <YAxis allowDecimals={false} tick={{ fontSize: 12, fill: "#49784C" }} axisLine={false} tickLine={false} width={36} />
+          <Tooltip cursor={{ fill: "#F4F9F1" }} formatter={(v: number) => [`${v} voucher(s)`, "Estoque"]}
+            contentStyle={{ borderRadius: 12, border: "1px solid #D8E9D3", fontSize: 13 }} />
+          <Bar dataKey="qtd" radius={[8, 8, 0, 0]} maxBarSize={64}>
+            {stock.map((_, i) => <Cell key={i} fill={PALETTE[i % PALETTE.length]} />)}
+          </Bar>
+        </BarChart>
+      </ChartCard>
     </div>
   );
 }
