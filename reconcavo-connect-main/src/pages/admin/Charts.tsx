@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { formatBRL } from "@/lib/voucher";
 
 interface Pay { location_id: string | null; amount: number; plan_name: string; when: number }
-interface Row { nome: string; vendas: number; valor: number }
+interface Row { nome: string; vendas: number; valor: number; ticket?: number }
 
 // 4 gráficos: vendas/ponto, faturamento/ponto, vendas/plano, vendas/dia.
 // Cores — mesma cor identifica o item (local/plano) nos gráficos.
@@ -63,7 +63,9 @@ export default function Charts() {
       const r = agg.get(nome) ?? { nome, vendas: 0, valor: 0 };
       r.vendas += 1; r.valor += p.amount; agg.set(nome, r);
     }
-    return Array.from(agg.values()).sort((a, b) => b.vendas - a.vendas);
+    return Array.from(agg.values())
+      .map((r) => ({ ...r, ticket: r.vendas ? r.valor / r.vendas : 0 }))
+      .sort((a, b) => b.vendas - a.vendas);
   }, [filtered, locName]);
 
   const byPlan = useMemo<Row[]>(() => {
@@ -177,6 +179,20 @@ export default function Charts() {
               <Tooltip cursor={{ fill: "#F4F9F1" }} formatter={(v: number) => [formatBRL(Number(v)), "Faturamento"]}
                 contentStyle={{ borderRadius: 12, border: "1px solid #D8E9D3", fontSize: 13 }} />
               <Bar dataKey="valor" radius={[8, 8, 0, 0]} maxBarSize={64}>
+                {byLocation.map((_, i) => <Cell key={i} fill={PALETTE[i % PALETTE.length]} />)}
+              </Bar>
+            </BarChart>
+          </ChartCard>
+
+          <ChartCard title="Ticket médio por ponto de venda" subtitle="Valor médio por venda (faturamento ÷ nº de vendas) em cada local">
+            <BarChart data={byLocation} margin={{ top: 8, right: 12, left: 8, bottom: 4 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#EAF2E6" vertical={false} />
+              <XAxis dataKey="nome" tickFormatter={shortName} tick={{ fontSize: 12, fill: "#49784C" }} axisLine={{ stroke: "#D8E9D3" }} tickLine={false} />
+              <YAxis tick={{ fontSize: 12, fill: "#49784C" }} axisLine={false} tickLine={false} width={58} tickFormatter={(v: number) => `R$${v.toFixed(0)}`} />
+              <Tooltip cursor={{ fill: "#F4F9F1" }}
+                formatter={(v: number, _n, p) => [`${formatBRL(Number(v))} · ${(p?.payload as Row)?.vendas ?? 0} venda(s)`, "Ticket médio"]}
+                contentStyle={{ borderRadius: 12, border: "1px solid #D8E9D3", fontSize: 13 }} />
+              <Bar dataKey="ticket" radius={[8, 8, 0, 0]} maxBarSize={64}>
                 {byLocation.map((_, i) => <Cell key={i} fill={PALETTE[i % PALETTE.length]} />)}
               </Bar>
             </BarChart>
