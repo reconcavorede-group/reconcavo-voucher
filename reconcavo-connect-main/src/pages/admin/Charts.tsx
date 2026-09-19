@@ -68,6 +68,7 @@ export default function Charts() {
 
   const byLocation = useMemo<Row[]>(() => {
     const agg = new Map<string, Row>();
+    for (const name of locName.values()) agg.set(name, { nome: name, vendas: 0, valor: 0 }); // mostra todos os locais, mesmo com 0
     for (const p of filtered) {
       const nome = locName.get(p.location_id ?? "") ?? "Sem local";
       const r = agg.get(nome) ?? { nome, vendas: 0, valor: 0 };
@@ -80,6 +81,7 @@ export default function Charts() {
 
   const byPlan = useMemo<Row[]>(() => {
     const agg = new Map<string, Row>();
+    for (const pl of PLAN_ORDER) agg.set(pl, { nome: pl, vendas: 0, valor: 0 }); // mostra todos os planos, mesmo com 0
     for (const p of filtered) {
       if (planLoc && (p.location_id ?? "") !== planLoc) continue; // filtra por ponto (se selecionado)
       const r = agg.get(p.plan_name) ?? { nome: p.plan_name, vendas: 0, valor: 0 };
