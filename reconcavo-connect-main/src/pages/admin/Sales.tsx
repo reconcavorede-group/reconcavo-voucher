@@ -15,8 +15,14 @@ interface Sale {
   id: string; plan_name: string; amount: number; payment_method: string; status: string;
   created_at: string; completed_at: string | null; customer_name: string | null;
   customer_phone: string | null; voucher_id: string | null; duration_minutes: number;
-  // Junção com o voucher: MAC do aparelho que efetivamente usou o código.
-  vouchers: { mac_address: string | null; activated_at: string | null } | null;
+  // Junção com o voucher: código entregue, MAC, estado de conexão e uptime.
+  vouchers: {
+    code: string | null;
+    mac_address: string | null;
+    activated_at: string | null;
+    connected: boolean | null;
+    uptime: string | null;
+  } | null;
 }
 
 // A confirmação de pagamento é 100% automática (webhook do Mercado Pago). Esta
@@ -38,19 +44,22 @@ export default function Sales() {
 
   const load = async () => {
     if (!locationId) return;
-    const { data } = await supabase.from("payments").select("*, vouchers(mac_address, activated_at)").eq("location_id", locationId).order("created_at", { ascending: false }).limit(500);
+    const { data } = await supabase.from("payments").select("*, vouchers(code, mac_address, activated_at, connected, uptime)").eq("location_id", locationId).order("created_at", { ascending: false }).limit(500);
     setSales((data ?? []) as Sale[]);
   };
 
   const filtered = filter === "all" ? sales : sales.filter((s) => s.status === filter);
 
   const exportCSV = () => {
-    const header = ["ID", "Data", "Cliente", "Telefone", "Plano", "Valor", "Método", "Status", "Confirmado em", "Dispositivo (MAC)"];
+    const header = ["ID", "Data", "Cliente", "Telefone", "Plano", "Valor", "Método", "Status", "Confirmado em", "Código", "Conexão", "Uptime", "Dispositivo (MAC)"];
     const rows = filtered.map((s) => [
       s.id, new Date(s.created_at).toLocaleString("pt-BR"), s.customer_name ?? "",
       s.customer_phone ?? "", s.plan_name, Number(s.amount).toFixed(2),
       s.payment_method, statusLabel(s.status),
       s.completed_at ? new Date(s.completed_at).toLocaleString("pt-BR") : "",
+      s.vouchers?.code ?? "",
+      s.vouchers?.connected === true ? "Conectado" : s.vouchers?.connected === false ? "Desconectado" : "",
+      s.vouchers?.uptime ?? "",
       s.vouchers?.mac_address ?? "",
     ]);
     const csv = [header, ...rows].map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\n");
@@ -93,7 +102,7 @@ export default function Sales() {
 
       <div className="overflow-hidden rounded-[20px] border-2 border-[#D8E9D3] bg-white">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[640px] text-sm">
+          <table className="w-full min-w-[980px] text-sm">
             <thead>
               <tr className="border-b border-[#D8E9D3] text-left text-xs uppercase tracking-wider text-[#6E9070]">
                 <th className="px-4 py-3 font-semibold">Data</th>
@@ -102,13 +111,16 @@ export default function Sales() {
                 <th className="px-4 py-3 font-semibold">Valor</th>
                 <th className="px-4 py-3 font-semibold">Método</th>
                 <th className="px-4 py-3 font-semibold">Status</th>
+                <th className="px-4 py-3 font-semibold">Código</th>
+                <th className="px-4 py-3 font-semibold">Conexão</th>
+                <th className="px-4 py-3 font-semibold">Uptime</th>
                 <th className="px-4 py-3 font-semibold">Dispositivo</th>
                 <th className="px-4 py-3 text-right font-semibold">Ações</th>
               </tr>
             </thead>
             <tbody>
               {filtered.length === 0 && (
-                <tr><td colSpan={8} className="py-10 text-center text-[#6E9070]">Nenhuma venda</td></tr>
+                <tr><td colSpan={11} className="py-10 text-center text-[#6E9070]">Nenhuma venda</td></tr>
               )}
               {filtered.map((s) => (
                 <tr key={s.id} className="border-b border-[#EEF6EB] transition hover:bg-[#F7FBF4]">
@@ -118,6 +130,9 @@ export default function Sales() {
                   <td className="px-4 py-3 font-semibold text-[#135B1D]">{formatBRL(Number(s.amount))}</td>
                   <td className="px-4 py-3 text-xs uppercase text-[#49784C]">{s.payment_method}</td>
                   <td className="px-4 py-3"><StatusBadge status={s.status} /></td>
+                  <td className="px-4 py-3 font-mono text-xs font-semibold text-[#135B1D]">{s.vouchers?.code ?? "—"}</td>
+                  <td className="px-4 py-3"><ConnLight connected={s.vouchers?.connected ?? null} /></td>
+                  <td className="px-4 py-3 font-mono text-xs text-[#49784C]">{s.vouchers?.uptime ?? "—"}</td>
                   <td className="px-4 py-3 font-mono text-xs text-[#49784C]">{s.vouchers?.mac_address ?? "—"}</td>
                   <td className="px-4 py-3 text-right">
                     <Link to={`/order/${s.id}`} target="_blank" className="inline-flex rounded-lg p-2 text-[#135B1D] transition hover:bg-[#E3F1DE]"><Eye className="h-4 w-4" /></Link>
@@ -129,6 +144,22 @@ export default function Sales() {
         </div>
       </div>
     </div>
+  );
+}
+
+// Luz de conexão do voucher: verde = conectado agora, vermelho = desconectado
+// (já usou e caiu), cinza = ainda não conectou nenhuma vez.
+function ConnLight({ connected }: { connected: boolean | null }) {
+  const cfg = connected === true
+    ? { dot: "bg-[#22C55E]", ring: "shadow-[0_0_0_3px_rgba(34,197,94,0.2)]", label: "Conectado", text: "text-[#1E6B26]" }
+    : connected === false
+    ? { dot: "bg-[#EF4444]", ring: "", label: "Desconectado", text: "text-[#B4432E]" }
+    : { dot: "bg-[#C9D3C6]", ring: "", label: "—", text: "text-[#6E9070]" };
+  return (
+    <span className="inline-flex items-center gap-1.5">
+      <span className={`h-2.5 w-2.5 rounded-full ${cfg.dot} ${cfg.ring}`} />
+      <span className={`text-xs font-semibold ${cfg.text}`}>{cfg.label}</span>
+    </span>
   );
 }
 

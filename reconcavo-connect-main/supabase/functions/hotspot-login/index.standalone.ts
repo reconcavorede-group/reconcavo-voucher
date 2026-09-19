@@ -28,22 +28,25 @@ Deno.serve(async (req) => {
     const url = new URL(req.url);
     const code = (url.searchParams.get("code") ?? "").trim().toUpperCase();
     const mac = (url.searchParams.get("mac") ?? "").trim().toUpperCase();
+    const event = (url.searchParams.get("event") ?? "login").trim().toLowerCase();
+    const uptime = (url.searchParams.get("uptime") ?? "").trim();
     const k = url.searchParams.get("k") ?? "";
 
     const secret = Deno.env.get("HOTSPOT_LOGIN_SECRET") ?? "";
     if (!secret || k !== secret) {
       return new Response("forbidden", { status: 403, headers: cors });
     }
-    if (!code || !mac) {
-      return new Response("code e mac obrigatórios", { status: 400, headers: cors });
+    if (!code) {
+      return new Response("code obrigatório", { status: 400, headers: cors });
     }
 
+    // login: conectado + MAC/horário. logout: desconectado + uptime da sessão.
+    const patch: Record<string, unknown> = event === "logout"
+      ? { connected: false, ...(uptime ? { uptime } : {}), ...(mac ? { mac_address: mac } : {}) }
+      : { connected: true, activated_at: new Date().toISOString(), ...(mac ? { mac_address: mac } : {}) };
+
     const supabase = serviceClient();
-    // Grava o MAC e o horário do login no voucher com este código.
-    const { error } = await supabase
-      .from("vouchers")
-      .update({ mac_address: mac, activated_at: new Date().toISOString() })
-      .eq("code", code);
+    const { error } = await supabase.from("vouchers").update(patch).eq("code", code);
 
     if (error) return new Response("erro: " + error.message, { status: 500, headers: cors });
     return new Response("ok", { status: 200, headers: cors });

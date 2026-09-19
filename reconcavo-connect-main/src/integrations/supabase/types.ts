@@ -235,6 +235,7 @@ export type Database = {
           activated_at: string | null
           batch_id: string | null
           code: string
+          connected: boolean | null
           created_at: string
           duration_minutes: number
           duration_type: string
@@ -250,11 +251,13 @@ export type Database = {
           password: string
           price: number
           status: string
+          uptime: string | null
         }
         Insert: {
           activated_at?: string | null
           batch_id?: string | null
           code: string
+          connected?: boolean | null
           created_at?: string
           duration_minutes: number
           duration_type: string
@@ -270,11 +273,13 @@ export type Database = {
           password: string
           price: number
           status?: string
+          uptime?: string | null
         }
         Update: {
           activated_at?: string | null
           batch_id?: string | null
           code?: string
+          connected?: boolean | null
           created_at?: string
           duration_minutes?: number
           duration_type?: string
@@ -290,6 +295,7 @@ export type Database = {
           password?: string
           price?: number
           status?: string
+          uptime?: string | null
         }
         Relationships: []
       }
