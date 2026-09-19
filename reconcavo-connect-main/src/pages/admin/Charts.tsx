@@ -8,6 +8,7 @@ import { formatBRL } from "@/lib/voucher";
 interface Pay { location_id: string | null; amount: number; plan_name: string; when: number }
 interface Row { nome: string; vendas: number; valor: number }
 
+// 4 gráficos: vendas/ponto, faturamento/ponto, vendas/plano, vendas/dia.
 // Cores — mesma cor identifica o item (local/plano) nos gráficos.
 const PALETTE = ["#135B1D", "#2E8B3D", "#7CB342", "#1E8A2C", "#49784C", "#A8D06A"];
 const PLAN_ORDER = ["1 hora", "2 horas", "24 horas", "7 dias", "30 dias"];
