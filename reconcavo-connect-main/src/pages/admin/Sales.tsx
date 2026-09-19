@@ -38,8 +38,11 @@ export default function Sales() {
   useEffect(() => {
     if (!locationId) return;
     load();
+    // Escuta pagamentos (novas vendas/status) E vouchers (luz de conexão/uptime,
+    // gravados pelo MikroTik no login/logout) para o extrato atualizar ao vivo.
     const ch = supabase.channel("sales").on("postgres_changes", { event: "*", schema: "public", table: "payments" }, load).subscribe();
-    return () => { supabase.removeChannel(ch); };
+    const chV = supabase.channel("sales-vouchers").on("postgres_changes", { event: "*", schema: "public", table: "vouchers" }, load).subscribe();
+    return () => { supabase.removeChannel(ch); supabase.removeChannel(chV); };
   }, [locationId]);
 
   const load = async () => {
