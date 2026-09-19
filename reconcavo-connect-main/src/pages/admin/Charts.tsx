@@ -123,6 +123,7 @@ export default function Charts() {
 
   const stockByPlan = useMemo(() => {
     const m = new Map<string, number>();
+    for (const pl of PLAN_ORDER) m.set(pl, 0); // mostra todos os planos, mesmo com estoque 0
     for (const r of stockRows) { if (stockLoc && r.loc !== stockLoc) continue; m.set(r.plano, (m.get(r.plano) ?? 0) + 1); }
     return [...m.entries()].map(([plano, qtd]) => ({ nome: plano, qtd })).sort((a, b) => {
       const ia = PLAN_ORDER.indexOf(a.nome), ib = PLAN_ORDER.indexOf(b.nome);
