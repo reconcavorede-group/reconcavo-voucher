@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import {
-  Bar, BarChart, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid,
+  Area, AreaChart, Bar, BarChart, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid,
 } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
 import { formatBRL } from "@/lib/voucher";
@@ -75,6 +75,28 @@ export default function Charts() {
       return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
     });
   }, [filtered]);
+
+  // Vendas por dia — preenche os dias sem venda com 0 dentro do período.
+  const byDay = useMemo(() => {
+    const dayKey = (t: number) => { const d = new Date(t); d.setHours(0, 0, 0, 0); return d.getTime(); };
+    const counts = new Map<number, { vendas: number; valor: number }>();
+    for (const p of filtered) {
+      const k = dayKey(p.when);
+      const r = counts.get(k) ?? { vendas: 0, valor: 0 };
+      r.vendas += 1; r.valor += p.amount; counts.set(k, r);
+    }
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    let from = new Date(today);
+    if (period === "7d") from.setDate(from.getDate() - 6);
+    else if (period === "30d") from.setDate(from.getDate() - 29);
+    else if (period === "tudo") { const ks = [...counts.keys()]; from = new Date(ks.length ? Math.min(...ks) : today.getTime()); }
+    const out: { dia: string; vendas: number; valor: number }[] = [];
+    for (const d = new Date(from); d <= today; d.setDate(d.getDate() + 1)) {
+      const r = counts.get(d.getTime()) ?? { vendas: 0, valor: 0 };
+      out.push({ dia: `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}`, vendas: r.vendas, valor: r.valor });
+    }
+    return out;
+  }, [filtered, period]);
 
   const totalVendas = filtered.length;
   const totalValor = useMemo(() => filtered.reduce((s, p) => s + p.amount, 0), [filtered]);
@@ -156,6 +178,24 @@ export default function Charts() {
                 {byPlan.map((_, i) => <Cell key={i} fill={PALETTE[i % PALETTE.length]} />)}
               </Bar>
             </BarChart>
+          </ChartCard>
+
+          <ChartCard title="Vendas por dia" subtitle="Evolução das vendas ao longo do período">
+            <AreaChart data={byDay} margin={{ top: 8, right: 12, left: -8, bottom: 4 }}>
+              <defs>
+                <linearGradient id="gradVendas" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#2E8B3D" stopOpacity={0.35} />
+                  <stop offset="100%" stopColor="#2E8B3D" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="#EAF2E6" vertical={false} />
+              <XAxis dataKey="dia" tick={{ fontSize: 11, fill: "#49784C" }} axisLine={{ stroke: "#D8E9D3" }} tickLine={false} minTickGap={22} />
+              <YAxis allowDecimals={false} tick={{ fontSize: 12, fill: "#49784C" }} axisLine={false} tickLine={false} width={32} />
+              <Tooltip cursor={{ stroke: "#B4F04B", strokeWidth: 2 }}
+                formatter={(v: number, _n, p) => [`${v} venda(s) · ${formatBRL((p?.payload as { valor: number })?.valor ?? 0)}`, "Dia"]}
+                contentStyle={{ borderRadius: 12, border: "1px solid #D8E9D3", fontSize: 13 }} />
+              <Area type="monotone" dataKey="vendas" stroke="#135B1D" strokeWidth={2} fill="url(#gradVendas)" dot={byDay.length <= 31 ? { r: 2, fill: "#135B1D" } : false} />
+            </AreaChart>
           </ChartCard>
         </>
       )}
