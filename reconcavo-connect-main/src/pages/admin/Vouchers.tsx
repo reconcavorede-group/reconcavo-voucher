@@ -80,7 +80,8 @@ export default function Vouchers() {
     const { error } = await supabase.from("vouchers").insert(rows);
     setCreating(false);
     if (error) return toast.error("Erro: " + error.message);
-    toast.success(`${qty} voucher(s) gerado(s)! Baixe o .rsc e importe no MikroTik.`);
+    await load(); // atualiza a lista de lotes na hora, sem precisar de F5
+    toast.success(`${qty} voucher(s) gerado(s)! O roteador importa sozinho em ~5 min.`);
   };
 
   // Agrupa vouchers por lote (batch_id). Legados sem batch entram como "avulsos".
