@@ -105,11 +105,12 @@ export default function Sales() {
 
       <div className="overflow-hidden rounded-[20px] border-2 border-[#D8E9D3] bg-white">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[980px] text-sm">
+          <table className="w-full min-w-[1080px] text-sm">
             <thead>
               <tr className="border-b border-[#D8E9D3] text-left text-xs uppercase tracking-wider text-[#6E9070]">
                 <th className="px-4 py-3 font-semibold">Data</th>
                 <th className="px-4 py-3 font-semibold">Cliente</th>
+                <th className="px-4 py-3 font-semibold">Telefone</th>
                 <th className="px-4 py-3 font-semibold">Plano</th>
                 <th className="px-4 py-3 font-semibold">Valor</th>
                 <th className="px-4 py-3 font-semibold">Método</th>
@@ -123,12 +124,17 @@ export default function Sales() {
             </thead>
             <tbody>
               {filtered.length === 0 && (
-                <tr><td colSpan={11} className="py-10 text-center text-[#6E9070]">Nenhuma venda</td></tr>
+                <tr><td colSpan={12} className="py-10 text-center text-[#6E9070]">Nenhuma venda</td></tr>
               )}
               {filtered.map((s) => (
                 <tr key={s.id} className="border-b border-[#EEF6EB] transition hover:bg-[#F7FBF4]">
                   <td className="px-4 py-3 text-[#49784C]">{new Date(s.created_at).toLocaleString("pt-BR")}</td>
                   <td className="px-4 py-3 font-medium text-[#152B14]">{s.customer_name ?? "—"}</td>
+                  <td className="px-4 py-3 text-[#49784C]">
+                    {s.customer_phone
+                      ? <a href={`https://wa.me/55${s.customer_phone.replace(/\D/g, "")}`} target="_blank" rel="noreferrer" className="text-[#1E8A2C] hover:underline">{s.customer_phone}</a>
+                      : "—"}
+                  </td>
                   <td className="px-4 py-3 text-[#152B14]">{s.plan_name}</td>
                   <td className="px-4 py-3 font-semibold text-[#135B1D]">{formatBRL(Number(s.amount))}</td>
                   <td className="px-4 py-3 text-xs uppercase text-[#49784C]">{s.payment_method}</td>

@@ -26,10 +26,18 @@ interface Props {
 export function RequestAccessDialog({ plan, open, onOpenChange }: Props) {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
 
   if (!plan) return null;
 
+  const phoneDigits = phone.replace(/\D/g, "");
+  const valid = name.trim().length >= 2 && phoneDigits.length >= 10;
+
   const handleSubmit = async () => {
+    const nm = name.trim();
+    if (nm.length < 2) return toast.error("Informe seu nome");
+    if (phoneDigits.length < 10) return toast.error("Informe um WhatsApp válido com DDD");
     setLoading(true);
     const { data, error } = await supabase
       .from("payments")
@@ -41,6 +49,8 @@ export function RequestAccessDialog({ plan, open, onOpenChange }: Props) {
         payment_method: "pix",
         status: "pending",
         location_id: plan.location_id,
+        customer_name: nm,
+        customer_phone: phoneDigits,
       })
       .select("id")
       .single();
@@ -67,8 +77,28 @@ export function RequestAccessDialog({ plan, open, onOpenChange }: Props) {
           <span className="text-2xl font-extrabold text-[#135B1D]">{formatBRL(plan.price)}</span>
         </div>
 
+        {/* Dados do cliente — obrigatórios, coletados no ato da compra */}
+        <div className="mt-4 space-y-3">
+          <div className="space-y-1">
+            <label htmlFor="rv-name" className="text-xs font-semibold text-[#49784C]">Nome</label>
+            <input
+              id="rv-name" value={name} onChange={(e) => setName(e.target.value)}
+              placeholder="Seu nome" autoComplete="name"
+              className="min-h-[48px] w-full rounded-xl border border-[#C9DFC0] bg-[#F4F9F1] px-4 text-[16px] text-[#152B14] placeholder:text-[#8FB08C] focus:outline-none focus-visible:ring-[3px] focus-visible:ring-[#1E8A2C]"
+            />
+          </div>
+          <div className="space-y-1">
+            <label htmlFor="rv-phone" className="text-xs font-semibold text-[#49784C]">WhatsApp (com DDD)</label>
+            <input
+              id="rv-phone" value={phone} onChange={(e) => setPhone(e.target.value)}
+              placeholder="(75) 99999-9999" inputMode="tel" autoComplete="tel"
+              className="min-h-[48px] w-full rounded-xl border border-[#C9DFC0] bg-[#F4F9F1] px-4 text-[16px] text-[#152B14] placeholder:text-[#8FB08C] focus:outline-none focus-visible:ring-[3px] focus-visible:ring-[#1E8A2C]"
+            />
+          </div>
+        </div>
+
         <button
-          onClick={handleSubmit} disabled={loading}
+          onClick={handleSubmit} disabled={loading || !valid}
           className="mt-5 flex min-h-[52px] w-full items-center justify-center gap-2 rounded-xl bg-[#B4F04B] px-4 font-bold text-[#152B14] transition hover:brightness-[1.06] active:scale-[0.98] disabled:opacity-70"
         >
           {loading && <Loader2 className="h-4 w-4 animate-spin" />}

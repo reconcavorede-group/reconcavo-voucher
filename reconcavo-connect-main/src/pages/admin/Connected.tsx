@@ -27,9 +27,12 @@ const TONE: Record<Tone, { dot: string; text: string; bg: string; label: string 
   none: { dot: "#9AA79A", text: "#5B6B5B", bg: "#EFF2EE", label: "Sem relatório" },
 };
 
+interface Buyer { name: string | null; phone: string | null }
+
 export default function Connected() {
   const { locations } = useAdminLocation();
   const [statuses, setStatuses] = useState<Map<string, Status>>(new Map());
+  const [buyers, setBuyers] = useState<Map<string, Buyer>>(new Map()); // code -> comprador
   const [now, setNow] = useState(() => Date.now());
   const [loading, setLoading] = useState(true);
 
@@ -38,8 +41,29 @@ export default function Connected() {
       .from("mikrotik_status")
       .select("location_id, active_clients, user_count, last_report_at");
     const m = new Map<string, Status>();
-    for (const r of (data ?? []) as Status[]) m.set(r.location_id, r);
+    const codes = new Set<string>();
+    for (const r of (data ?? []) as Status[]) {
+      m.set(r.location_id, r);
+      for (const c of r.active_clients ?? []) if (c.code) codes.add(c.code);
+    }
     setStatuses(m);
+
+    // Cruza o código do voucher conectado com o comprador (payment) p/ nome/telefone.
+    if (codes.size) {
+      const { data: vs } = await supabase
+        .from("vouchers")
+        .select("code, payments(customer_name, customer_phone)")
+        .in("code", [...codes]);
+      const b = new Map<string, Buyer>();
+      for (const v of (vs ?? []) as Array<{ code: string; payments: unknown }>) {
+        const pay = (Array.isArray(v.payments) ? v.payments[0] : v.payments) as
+          { customer_name?: string | null; customer_phone?: string | null } | null;
+        b.set(v.code, { name: pay?.customer_name ?? null, phone: pay?.customer_phone ?? null });
+      }
+      setBuyers(b);
+    } else {
+      setBuyers(new Map());
+    }
     setLoading(false);
   };
 
@@ -106,6 +130,8 @@ export default function Connected() {
                   <thead>
                     <tr className="border-b border-[#EEF6EB] text-xs uppercase tracking-wide text-[#6E9070]">
                       <th className="py-2 pr-3 font-semibold">Código</th>
+                      <th className="py-2 pr-3 font-semibold">Cliente</th>
+                      <th className="py-2 pr-3 font-semibold">Telefone</th>
                       <th className="py-2 pr-3 font-semibold">IP</th>
                       <th className="py-2 pr-3 font-semibold">MAC</th>
                       <th className="py-2 pr-3 font-semibold">Conectado há</th>
@@ -113,15 +139,24 @@ export default function Connected() {
                     </tr>
                   </thead>
                   <tbody>
-                    {clients.map((c, i) => (
+                    {clients.map((c, i) => {
+                      const buyer = buyers.get(c.code);
+                      return (
                       <tr key={c.code + i} className="border-b border-[#F2F8EF] last:border-0">
                         <td className="py-2 pr-3 font-mono font-semibold text-[#135B1D]">{c.code || "—"}</td>
+                        <td className="py-2 pr-3 font-medium text-[#152B14]">{buyer?.name || "—"}</td>
+                        <td className="py-2 pr-3 text-[#49784C]">
+                          {buyer?.phone
+                            ? <a href={`https://wa.me/55${buyer.phone.replace(/\D/g, "")}`} target="_blank" rel="noreferrer" className="text-[#1E8A2C] hover:underline">{buyer.phone}</a>
+                            : "—"}
+                        </td>
                         <td className="py-2 pr-3 font-mono text-[#49784C]">{c.ip || "—"}</td>
                         <td className="py-2 pr-3 font-mono text-[#49784C]">{c.mac || "—"}</td>
                         <td className="py-2 pr-3 text-[#152B14]">{c.uptime || "—"}</td>
                         <td className="py-2 text-[#152B14]">{c.left || "—"}</td>
                       </tr>
-                    ))}
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
