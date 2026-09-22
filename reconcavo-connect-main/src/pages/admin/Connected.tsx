@@ -70,11 +70,12 @@ export default function Connected() {
   useEffect(() => {
     document.title = "Conectados — Recôncavo Voucher";
     load();
-    // Atualiza sozinho quando um roteador reporta (realtime) e a cada 30s (rótulos "há X").
+    // Atualiza sozinho: realtime (se a tabela estiver na publicação) E um poll a
+    // cada 15s que REBUSCA os dados — garante refresh mesmo sem realtime.
     const ch = supabase.channel("mikrotik_status")
       .on("postgres_changes", { event: "*", schema: "public", table: "mikrotik_status" }, load)
       .subscribe();
-    const t = setInterval(() => setNow(Date.now()), 30_000);
+    const t = setInterval(() => { setNow(Date.now()); load(); }, 15_000);
     return () => { supabase.removeChannel(ch); clearInterval(t); };
   }, []);
 
