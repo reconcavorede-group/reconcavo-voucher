@@ -34,6 +34,7 @@ export default function Connected() {
   const [statuses, setStatuses] = useState<Map<string, Status>>(new Map());
   const [buyers, setBuyers] = useState<Map<string, Buyer>>(new Map()); // code -> comprador
   const [now, setNow] = useState(() => Date.now());
+  const [clockOffset, setClockOffset] = useState(0); // ms: relógioDoPC - horaDoServidor (corrige PC adiantado/atrasado)
   const [loading, setLoading] = useState(true);
 
   const load = async () => {
@@ -70,6 +71,11 @@ export default function Connected() {
   useEffect(() => {
     document.title = "Conectados — Recôncavo Voucher";
     load();
+    // Mede a diferença entre o relógio do PC e o do servidor (uma vez), pra
+    // "atualizado há X" ficar correto mesmo com o PC adiantado/atrasado.
+    (supabase.rpc as (fn: string) => Promise<{ data: string | null }>)("server_now").then(({ data }) => {
+      if (data) setClockOffset(Date.now() - new Date(data).getTime());
+    });
     // Atualiza sozinho: realtime (se a tabela estiver na publicação) E um poll a
     // cada 15s que REBUSCA os dados — garante refresh mesmo sem realtime.
     const ch = supabase.channel("mikrotik_status")
@@ -102,7 +108,7 @@ export default function Connected() {
       {locations.map((loc) => {
         const st = statuses.get(loc.id);
         const clients = st?.active_clients ?? [];
-        const h = reportHealth(st?.last_report_at, now);
+        const h = reportHealth(st?.last_report_at, now - clockOffset);
         const t = TONE[h.tone];
         return (
           <div key={loc.id} className="rounded-[20px] border-2 border-[#D8E9D3] bg-white p-5">
