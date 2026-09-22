@@ -8,6 +8,7 @@ import { Loader2, LogOut, ExternalLink, MapPin, Eye } from "lucide-react";
 
 const NAV = [
   { to: "/admin", label: "Dashboard", end: true, title: "Dashboard", sub: "Acompanhe a operação em tempo real" },
+  { to: "/admin/connected", label: "Conectados", title: "Conectados", sub: "Quem está usando o Wi-Fi agora em cada ponto" },
   { to: "/admin/vouchers", label: "Vouchers", title: "Vouchers", sub: "Gere lotes e gerencie o estoque do MikroTik" },
   { to: "/admin/sales", label: "Vendas", title: "Vendas", sub: "Histórico de pedidos e faturamento" },
   { to: "/admin/charts", label: "Gráficos", title: "Gráficos", sub: "Comparativo de vendas e faturamento entre os pontos" },
@@ -43,7 +44,7 @@ function AdminShell() {
   const { isAdmin } = useAdminLocation();
   const active = NAV.find((n) => (n.end ? pathname === n.to : pathname.startsWith(n.to))) ?? NAV[0];
   // O seletor de local não aparece em Locais (global) nem em Gráficos (compara todos).
-  const showSelector = pathname !== "/admin/locations" && pathname !== "/admin/charts";
+  const showSelector = pathname !== "/admin/locations" && pathname !== "/admin/charts" && pathname !== "/admin/connected";
 
   return (
     <div className="min-h-screen bg-[#F4F9F1] text-[#152B14]">
