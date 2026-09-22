@@ -8,6 +8,7 @@ export interface Loc {
   gateway_ip: string;
   active: boolean;
   sort_order: number;
+  last_synced_at?: string | null; // último sync do roteador (rv-sync); null = nunca
 }
 
 interface Ctx {

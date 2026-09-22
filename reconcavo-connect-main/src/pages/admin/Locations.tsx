@@ -10,6 +10,27 @@ function slugify(s: string): string {
     .replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
 }
 
+// "Sincronizado há X" com tom de saúde. O scheduler rv-sync roda a cada 5 min,
+// então ≤10 min = saudável (verde), ≤30 = atenção (âmbar), acima/nunca =
+// provável roteador offline (vermelho).
+type Tone = "ok" | "warn" | "bad";
+function syncLabel(iso: string | null | undefined, now: number): { text: string; tone: Tone } {
+  if (!iso) return { text: "nunca sincronizado", tone: "bad" };
+  const min = Math.floor((now - new Date(iso).getTime()) / 60000);
+  let text: string;
+  if (min < 1) text = "sincronizado agora";
+  else if (min < 60) text = `sincronizado há ${min} min`;
+  else if (min < 1440) text = `sincronizado há ${Math.floor(min / 60)} h`;
+  else text = `sincronizado há ${Math.floor(min / 1440)} d`;
+  const tone: Tone = min <= 10 ? "ok" : min <= 30 ? "warn" : "bad";
+  return { text, tone };
+}
+const TONE: Record<Tone, { dot: string; text: string; bg: string }> = {
+  ok:   { dot: "#22C55E", text: "#135B1D", bg: "#E9F7E7" },
+  warn: { dot: "#D9A400", text: "#8A6D00", bg: "#FBF3DA" },
+  bad:  { dot: "#EF4444", text: "#B4432E", bg: "#FDEEEA" },
+};
+
 export default function Locations() {
   const { locations, reload, setLocationId, isAdmin } = useAdminLocation();
   const [rows, setRows] = useState<Loc[]>([]);
@@ -17,9 +38,15 @@ export default function Locations() {
   const [slug, setSlug] = useState("");
   const [gateway, setGateway] = useState("192.168.88.1");
   const [saving, setSaving] = useState(false);
+  const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => { document.title = "Locais — Recôncavo Voucher"; }, []);
   useEffect(() => { setRows(locations); }, [locations]);
+  // Atualiza os rótulos "sincronizado há X" sozinho a cada 30s.
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 30_000);
+    return () => clearInterval(t);
+  }, []);
 
   const add = async () => {
     const nm = name.trim();
@@ -125,10 +152,23 @@ export default function Locations() {
                 )}
               </div>
             </div>
-            <div className="mt-3 flex items-center gap-2 border-t border-[#EEF6EB] pt-3 text-xs text-[#6E9070]">
+            <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-[#EEF6EB] pt-3 text-xs text-[#6E9070]">
               <MapPin className="h-3.5 w-3.5" />
               Link do captive portal deste local:
               <code className="rounded bg-[#F4F9F1] px-2 py-0.5 text-[#135B1D]">{storeUrl(r.slug)}</code>
+              {(() => {
+                const s = syncLabel(r.last_synced_at, now);
+                return (
+                  <span
+                    className="ml-auto inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 font-semibold"
+                    style={{ background: TONE[s.tone].bg, color: TONE[s.tone].text }}
+                    title="Última vez que o roteador deste local puxou vouchers da nuvem (rv-sync, a cada 5 min)"
+                  >
+                    <span className="h-2 w-2 rounded-full" style={{ background: TONE[s.tone].dot }} />
+                    {s.text}
+                  </span>
+                );
+              })()}
             </div>
           </div>
         ))}
