@@ -20,6 +20,15 @@ interface Props {
   onOpenChange: (o: boolean) => void;
 }
 
+// Máscara de telefone BR conforme digita: (XX) XXXX-XXXX ou (XX) XXXXX-XXXX.
+function maskPhone(v: string): string {
+  const d = v.replace(/\D/g, "").slice(0, 11);
+  if (d.length <= 2) return d;
+  if (d.length <= 6) return `(${d.slice(0, 2)}) ${d.slice(2)}`;
+  if (d.length <= 10) return `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`;
+  return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
+}
+
 // Checkout — 1º momento em que o cliente vê o PREÇO (modelo funil). Cria o
 // pedido e leva para a tela de pagamento (Pix/cartão), preservando a lógica
 // existente (Supabase + Mercado Pago).
@@ -50,7 +59,7 @@ export function RequestAccessDialog({ plan, open, onOpenChange }: Props) {
         status: "pending",
         location_id: plan.location_id,
         customer_name: nm,
-        customer_phone: phoneDigits,
+        customer_phone: phone.trim(),
       })
       .select("id")
       .single();
@@ -90,8 +99,8 @@ export function RequestAccessDialog({ plan, open, onOpenChange }: Props) {
           <div className="space-y-1">
             <label htmlFor="rv-phone" className="text-xs font-semibold text-[#49784C]">WhatsApp (com DDD)</label>
             <input
-              id="rv-phone" value={phone} onChange={(e) => setPhone(e.target.value)}
-              placeholder="(75) 99999-9999" inputMode="tel" autoComplete="tel"
+              id="rv-phone" value={phone} onChange={(e) => setPhone(maskPhone(e.target.value))}
+              placeholder="(75) 99999-9999" inputMode="tel" autoComplete="tel" maxLength={15}
               className="min-h-[48px] w-full rounded-xl border border-[#C9DFC0] bg-[#F4F9F1] px-4 text-[16px] text-[#152B14] placeholder:text-[#8FB08C] focus:outline-none focus-visible:ring-[3px] focus-visible:ring-[#1E8A2C]"
             />
           </div>
