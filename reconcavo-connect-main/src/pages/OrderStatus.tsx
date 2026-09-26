@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Clock, XCircle, Copy, ExternalLink, PackageX, Check } from "lucide-react";
+import { Loader2, Clock, XCircle, Copy, ExternalLink, PackageX, Check, Wifi } from "lucide-react";
 import { formatBRL, statusLabel } from "@/lib/voucher";
 import { buildLoginUrl } from "@/lib/config";
 import { toast } from "sonner";
@@ -132,6 +132,21 @@ export default function OrderStatus() {
                   <p className="text-sm text-[#8A6D1A]/80">Escolha como pagar abaixo. Esta página atualiza sozinha quando o pagamento for confirmado.</p>
                 </div>
               </div>
+
+              {/* Liberar 3 min de internet (trial do hotspot) para o cliente abrir
+                  o app do banco e pagar. Navega pro gateway do MikroTik, que aciona
+                  o trial e redireciona de volta para esta página. Só é útil quando o
+                  cliente está no Wi-Fi do ponto (sem internet ainda). */}
+              <a
+                href={`http://192.168.88.1/login?dst=${encodeURIComponent(typeof window !== "undefined" ? window.location.href : "")}`}
+                className="mt-3 flex min-h-[50px] w-full items-center justify-center gap-2 rounded-xl bg-[#0f3d2e] px-4 font-bold text-white transition hover:brightness-110 active:scale-[0.98]"
+              >
+                <Wifi className="h-4 w-4" /> Sem internet para pagar? Liberar 3 min
+              </a>
+              <p className="mt-1.5 text-center text-xs text-[#6E9070]">
+                Toque aqui quando o Pix estiver na tela, para abrir o app do banco e pagar.
+              </p>
+
               <Tabs defaultValue="pix" className="mt-4">
                 <TabsList className="grid w-full grid-cols-2 rounded-xl bg-[#E9F4E5] p-1">
                   <TabsTrigger value="pix" className="rounded-lg data-[state=active]:bg-white data-[state=active]:text-[#135B1D] data-[state=active]:shadow-sm">Pix</TabsTrigger>
