@@ -81,7 +81,7 @@ export default function Connected() {
     const ch = supabase.channel("mikrotik_status")
       .on("postgres_changes", { event: "*", schema: "public", table: "mikrotik_status" }, load)
       .subscribe();
-    const t = setInterval(() => { setNow(Date.now()); load(); }, 15_000);
+    const t = setInterval(() => { setNow(Date.now()); load(); }, 10_000);
     return () => { supabase.removeChannel(ch); clearInterval(t); };
   }, []);
 
