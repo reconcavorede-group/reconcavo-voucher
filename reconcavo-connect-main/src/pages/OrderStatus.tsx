@@ -83,6 +83,10 @@ export default function OrderStatus() {
     toast.success(`${label} copiado!`);
   };
 
+  // iPhone: o assistente de portal da Apple fecha ao liberar a internet e não dá
+  // pra forçar o Safari. Solução: o cliente copia o link do pedido e abre no Safari.
+  const isIOS = typeof navigator !== "undefined" && /iPad|iPhone|iPod/.test(navigator.userAgent);
+
   if (loading) return (
     <div className="flex min-h-screen items-center justify-center bg-[#F4F9F1]">
       <Loader2 className="h-8 w-8 animate-spin text-[#1E8A2C]" />
@@ -133,6 +137,21 @@ export default function OrderStatus() {
                 </div>
               </div>
 
+              {/* iPhone: o assistente da Apple fecha ao liberar a internet. O cliente
+                  copia o link e abre no Safari (que sobrevive), depois libera os 3 min. */}
+              {isIOS && (
+                <div className="mt-3 rounded-2xl border border-[#C9DFC0] bg-[#EAF3E6] p-4">
+                  <p className="text-sm font-semibold text-[#135B1D]">📱 No iPhone, pague pelo Safari</p>
+                  <p className="mt-1 text-sm text-[#49784C]">Copie o link, abra o <strong>Safari</strong> e cole — assim esta tela não fecha ao liberar a internet.</p>
+                  <button
+                    onClick={() => copy(typeof window !== "undefined" ? window.location.href : "", "Link do pedido")}
+                    className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl border border-[#135B1D] px-4 py-2.5 text-sm font-bold text-[#135B1D] transition hover:bg-[#E3F1DE]"
+                  >
+                    <Copy className="h-4 w-4" /> Copiar link do pedido
+                  </button>
+                </div>
+              )}
+
               {/* Liberar 3 min de internet (trial do hotspot) para o cliente abrir
                   o app do banco e pagar. Navega pro gateway do MikroTik, que aciona
                   o trial e redireciona de volta para esta página. Só é útil quando o
@@ -144,7 +163,7 @@ export default function OrderStatus() {
                 <Wifi className="h-4 w-4" /> Sem internet para pagar? Liberar 3 min
               </a>
               <p className="mt-1.5 text-center text-xs text-[#6E9070]">
-                Toque aqui quando o Pix estiver na tela, para abrir o app do banco e pagar.
+                {isIOS ? "No iPhone: primeiro copie o link e abra no Safari; depois toque aqui." : "Toque aqui quando o Pix estiver na tela, para abrir o app do banco e pagar."}
               </p>
 
               <Tabs defaultValue="pix" className="mt-4">
