@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Download, Eye } from "lucide-react";
+import { Download, Eye, Globe } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
@@ -15,6 +15,7 @@ interface Sale {
   id: string; plan_name: string; amount: number; payment_method: string; status: string;
   created_at: string; completed_at: string | null; customer_name: string | null;
   customer_phone: string | null; voucher_id: string | null; duration_minutes: number;
+  location_id: string;
   // Junção com o voucher: código entregue, MAC, estado de conexão e uptime.
   vouchers: {
     code: string | null;
@@ -29,34 +30,43 @@ interface Sale {
 // tela é somente leitura/relatório — não há mais botão "Confirmar" manual, pois
 // não existe método "Dinheiro" no site.
 export default function Sales() {
-  const { locationId } = useAdminLocation();
+  const { locationId, locations } = useAdminLocation();
   const [sales, setSales] = useState<Sale[]>([]);
   const [filter, setFilter] = useState<"all" | "pending" | "completed" | "failed" | "no_stock">("all");
+  // Quando ligado, ignora o local selecionado e mostra as vendas de TODOS os
+  // pontos num extrato único (com a coluna Local).
+  const [allLocs, setAllLocs] = useState(false);
+  const locName = (id: string) => locations.find((l) => l.id === id)?.name ?? "—";
 
   useEffect(() => { document.title = "Vendas — Recôncavo Voucher"; }, []);
 
   useEffect(() => {
-    if (!locationId) return;
     load();
     // Escuta pagamentos (novas vendas/status) E vouchers (luz de conexão/uptime,
     // gravados pelo MikroTik no login/logout) para o extrato atualizar ao vivo.
     const ch = supabase.channel("sales").on("postgres_changes", { event: "*", schema: "public", table: "payments" }, load).subscribe();
     const chV = supabase.channel("sales-vouchers").on("postgres_changes", { event: "*", schema: "public", table: "vouchers" }, load).subscribe();
     return () => { supabase.removeChannel(ch); supabase.removeChannel(chV); };
-  }, [locationId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [locationId, allLocs]);
 
   const load = async () => {
-    if (!locationId) return;
-    const { data } = await supabase.from("payments").select("*, vouchers(code, mac_address, activated_at, connected, uptime)").eq("location_id", locationId).order("created_at", { ascending: false }).limit(500);
+    let q = supabase.from("payments")
+      .select("*, vouchers(code, mac_address, activated_at, connected, uptime)");
+    if (!allLocs) {
+      if (!locationId) return;
+      q = q.eq("location_id", locationId);
+    }
+    const { data } = await q.order("created_at", { ascending: false }).limit(500);
     setSales((data ?? []) as Sale[]);
   };
 
   const filtered = filter === "all" ? sales : sales.filter((s) => s.status === filter);
 
   const exportCSV = () => {
-    const header = ["ID", "Data", "Cliente", "Telefone", "Plano", "Valor", "Método", "Status", "Confirmado em", "Código", "Conexão", "Uptime", "Dispositivo (MAC)"];
+    const header = ["ID", "Data", ...(allLocs ? ["Local"] : []), "Cliente", "Telefone", "Plano", "Valor", "Método", "Status", "Confirmado em", "Código", "Conexão", "Uptime", "Dispositivo (MAC)"];
     const rows = filtered.map((s) => [
-      s.id, new Date(s.created_at).toLocaleString("pt-BR"), s.customer_name ?? "",
+      s.id, new Date(s.created_at).toLocaleString("pt-BR"), ...(allLocs ? [locName(s.location_id)] : []), s.customer_name ?? "",
       s.customer_phone ?? "", s.plan_name, Number(s.amount).toFixed(2),
       s.payment_method, statusLabel(s.status),
       s.completed_at ? new Date(s.completed_at).toLocaleString("pt-BR") : "",
@@ -97,18 +107,26 @@ export default function Sales() {
             </button>
           ))}
         </div>
-        <button onClick={exportCSV}
-          className="flex items-center gap-1.5 rounded-xl border border-[#C9DFC0] bg-white px-3 py-2 text-sm font-semibold text-[#135B1D] transition hover:bg-[#E3F1DE]">
-          <Download className="h-4 w-4" /> Exportar CSV
-        </button>
+        <div className="flex items-center gap-2">
+          <button onClick={() => setAllLocs((v) => !v)}
+            className={`flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-semibold transition ${
+              allLocs ? "bg-[#135B1D] text-white" : "border border-[#C9DFC0] bg-white text-[#135B1D] hover:bg-[#E3F1DE]"
+            }`}>
+            <Globe className="h-4 w-4" /> Todos os locais
+          </button>
+          <button onClick={exportCSV}
+            className="flex items-center gap-1.5 rounded-xl border border-[#C9DFC0] bg-white px-3 py-2 text-sm font-semibold text-[#135B1D] transition hover:bg-[#E3F1DE]">
+            <Download className="h-4 w-4" /> Exportar CSV
+          </button>
+        </div>
       </div>
 
-      <div className="overflow-hidden rounded-[20px] border-2 border-[#D8E9D3] bg-white">
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[1080px] text-sm">
+      <div className="max-h-[70vh] overflow-auto rounded-[20px] border-2 border-[#D8E9D3] bg-white">
+          <table className="w-full text-sm [&_td]:whitespace-nowrap [&_th]:whitespace-nowrap">
             <thead>
-              <tr className="border-b border-[#D8E9D3] text-left text-xs uppercase tracking-wider text-[#6E9070]">
+              <tr className="sticky top-0 z-10 border-b border-[#D8E9D3] bg-white text-left text-xs uppercase tracking-wider text-[#6E9070]">
                 <th className="px-4 py-3 font-semibold">Data</th>
+                {allLocs && <th className="px-4 py-3 font-semibold">Local</th>}
                 <th className="px-4 py-3 font-semibold">Cliente</th>
                 <th className="px-4 py-3 font-semibold">Telefone</th>
                 <th className="px-4 py-3 font-semibold">Plano</th>
@@ -124,11 +142,12 @@ export default function Sales() {
             </thead>
             <tbody>
               {filtered.length === 0 && (
-                <tr><td colSpan={12} className="py-10 text-center text-[#6E9070]">Nenhuma venda</td></tr>
+                <tr><td colSpan={allLocs ? 13 : 12} className="py-10 text-center text-[#6E9070]">Nenhuma venda</td></tr>
               )}
               {filtered.map((s) => (
                 <tr key={s.id} className="border-b border-[#EEF6EB] transition hover:bg-[#F7FBF4]">
-                  <td className="px-4 py-3 text-[#49784C]">{new Date(s.created_at).toLocaleString("pt-BR")}</td>
+                  <td className="px-4 py-3 text-[#49784C]">{new Date(s.created_at).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}</td>
+                  {allLocs && <td className="px-4 py-3 font-medium text-[#135B1D]">{locName(s.location_id)}</td>}
                   <td className="px-4 py-3 font-medium text-[#152B14]">{s.customer_name ?? "—"}</td>
                   <td className="px-4 py-3 text-[#49784C]">
                     {s.customer_phone
@@ -150,7 +169,6 @@ export default function Sales() {
               ))}
             </tbody>
           </table>
-        </div>
       </div>
     </div>
   );

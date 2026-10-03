@@ -19,6 +19,7 @@ Deno.serve(async (req) => {
     const loja = (url.searchParams.get("loja") ?? "").trim().toLowerCase();
     const k = url.searchParams.get("k") ?? "";
     const totalRaw = url.searchParams.get("total") ?? "";
+    const cpuRaw = url.searchParams.get("cpu") ?? "";
 
     const secret = Deno.env.get("MIKROTIK_SYNC_SECRET") ?? "";
     if (!secret || k !== secret) {
@@ -53,6 +54,15 @@ Deno.serve(async (req) => {
       updated_at: new Date().toISOString(),
     });
     if (error) return new Response("erro: " + error.message, { status: 500, headers: corsHeaders });
+
+    // cpu-load do roteador num UPDATE separado: se a coluna cpu_load ainda não
+    // existir, o erro é ignorado e o relatório principal (acima) não quebra.
+    const cpu = parseInt(cpuRaw, 10);
+    if (Number.isFinite(cpu)) {
+      await supabase.from("mikrotik_status")
+        .update({ cpu_load: cpu }).eq("location_id", loc.id)
+        .then(() => {}, () => {});
+    }
 
     return new Response("ok " + active.length, { status: 200, headers: corsHeaders });
   } catch (e) {

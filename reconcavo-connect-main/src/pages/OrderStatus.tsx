@@ -3,7 +3,7 @@ import { useParams, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Clock, XCircle, Copy, ExternalLink, PackageX, Check, Wifi } from "lucide-react";
 import { formatBRL, statusLabel } from "@/lib/voucher";
-import { buildLoginUrl } from "@/lib/config";
+import { buildConnectUrl } from "@/lib/config";
 import { toast } from "sonner";
 import { PixPayment } from "@/components/PixPayment";
 import { CardPayment } from "@/components/CardPayment";
@@ -235,13 +235,21 @@ export default function OrderStatus() {
                 </button>
               </div>
 
-              <a href={buildLoginUrl(voucher.code, gateway)} target="_blank" rel="noreferrer"
+              {/* Troca o trial pelo voucher num toque. Copia o código (rede de
+                  proteção: se o auto-login falhar, o cliente cola no portal) e
+                  navega pro /status#rvconnect=... — o hash sobrevive ao MikroTik. */}
+              <button
+                onClick={() => {
+                  try { navigator.clipboard.writeText(voucher.code); } catch { /* ignora */ }
+                  const back = typeof window !== "undefined" ? window.location.href : undefined;
+                  window.location.href = buildConnectUrl(voucher.code, gateway, back);
+                }}
                 className="flex min-h-[52px] w-full items-center justify-center gap-2 rounded-xl bg-[#B4F04B] px-4 font-bold text-[#152B14] transition hover:brightness-[1.06] active:scale-[0.98]">
                 <ExternalLink className="h-4 w-4" /> Conectar agora (um clique)
-              </a>
+              </button>
 
               <div className="rounded-2xl bg-[#E9F4E5] p-4 text-sm text-[#49784C]">
-                Conecte-se à rede Wi-Fi <strong className="text-[#135B1D]">Recôncavo Voucher</strong> e toque no botão acima. Se não funcionar, digite o código na tela de login.
+                Conecte-se à rede Wi-Fi <strong className="text-[#135B1D]">Recôncavo Voucher</strong> e toque no botão acima. O código já fica copiado — se a tela de login aparecer, é só colar e tocar em Conectar.
               </div>
 
               {voucher.expires_at && (

@@ -30,19 +30,35 @@ export default function Charts() {
 
   useEffect(() => {
     (async () => {
-      const [{ data: locs }, { data: p }, { data: vs }] = await Promise.all([
-        supabase.from("locations").select("id, name").order("sort_order"),
-        supabase.from("payments").select("location_id, amount, plan_name, completed_at, created_at").eq("status", "completed").limit(5000),
-        supabase.from("vouchers").select("location_id, duration_type").eq("status", "disponivel").limit(5000),
+      // O PostgREST limita a resposta a ~1000 linhas (db-max-rows); .limit(5000)
+      // NÃO burla isso. Como há >1000 vouchers disponíveis no total e a query não
+      // tinha ordenação, locais inteiros (ex.: Feira) caíam fora das 1000 e
+      // apareciam com estoque 0. Buscamos em páginas de 1000 e juntamos tudo.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const pageAll = async (make: () => any): Promise<any[]> => {
+        const size = 1000; let from = 0; const out: any[] = [];
+        for (;;) {
+          const { data, error } = await make().range(from, from + size - 1);
+          if (error || !data || data.length === 0) break;
+          out.push(...data);
+          if (data.length < size) break;
+          from += size;
+        }
+        return out;
+      };
+      const { data: locs } = await supabase.from("locations").select("id, name").order("sort_order");
+      const [p, vs] = await Promise.all([
+        pageAll(() => supabase.from("payments").select("location_id, amount, plan_name, completed_at, created_at").eq("status", "completed")),
+        pageAll(() => supabase.from("vouchers").select("location_id, duration_type").eq("status", "disponivel")),
       ]);
       const nameMap = new Map((locs ?? []).map((l) => [l.id, l.name]));
       setLocName(nameMap);
       // Vouchers disponíveis (estoque atual) — guarda cru p/ agregar por ponto e por plano.
-      setStockRows((vs ?? []).map((v) => ({
+      setStockRows(vs.map((v) => ({
         loc: (v as { location_id: string | null }).location_id ?? "sem",
         plano: (v as { duration_type: string }).duration_type ?? "—",
       })));
-      setPays((p ?? []).map((r) => {
+      setPays(p.map((r) => {
         const d = (r as { completed_at: string | null; created_at: string }).completed_at ?? (r as { created_at: string }).created_at;
         return {
           location_id: (r as { location_id: string | null }).location_id,

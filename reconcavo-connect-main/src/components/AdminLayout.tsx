@@ -49,7 +49,7 @@ function AdminShell() {
   return (
     <div className="min-h-screen bg-[#F4F9F1] text-[#152B14]">
       <header className="sticky top-0 z-40 border-b border-[#D8E9D3] bg-[#F4F9F1]/90 backdrop-blur-md">
-        <div className="mx-auto flex max-w-[1080px] items-center justify-between gap-3 px-5 py-3">
+        <div className="mx-auto flex max-w-[1800px] items-center justify-between gap-3 px-5 py-3">
           <div className="flex items-center gap-2.5">
             <img src="/logo.png" alt="Recôncavo Voucher" className="h-9 w-9 object-contain" />
             <span className="leading-tight">
@@ -75,7 +75,7 @@ function AdminShell() {
       </header>
 
       <div className="bg-brand-flow px-5 pb-14 pt-8 text-white">
-        <div className="mx-auto max-w-[1080px]">
+        <div className="mx-auto max-w-[1800px]">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <h1 className="text-[clamp(26px,4vw,34px)] font-extrabold tracking-[-0.01em]">{active.title}</h1>
@@ -98,7 +98,7 @@ function AdminShell() {
         </div>
       </div>
 
-      <main className="mx-auto -mt-10 max-w-[1080px] px-5 pb-16">
+      <main className="mx-auto -mt-10 max-w-[1800px] px-5 pb-16">
         <Outlet />
       </main>
     </div>

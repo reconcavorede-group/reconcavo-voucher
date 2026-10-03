@@ -4,20 +4,26 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAdminLocation } from "@/lib/adminLocation";
 
 interface Client { code: string; ip: string; mac: string; uptime: string; left: string }
-interface Status { location_id: string; active_clients: Client[]; user_count: number | null; last_report_at: string | null }
+interface Status { location_id: string; active_clients: Client[]; user_count: number | null; last_report_at: string | null; cpu_load: number | null }
 
-// Saúde do relatório (rv-report roda a cada 3 min): verde ≤6min, âmbar ≤15,
+// Saúde do relatório (rv-report roda a cada 10s): verde ≤40s, âmbar ≤90s,
 // vermelho acima; cinza = nunca reportou (rv-report não instalado / roteador novo).
+// Limiares em SEGUNDOS porque a cadência é 10s — assim um roteador desligado
+// cai pra Offline em ~1-1,5 min, mas um relatório atrasado/perdido não pisca.
 type Tone = "ok" | "warn" | "bad" | "none";
 function reportHealth(iso: string | null | undefined, now: number): { text: string; tone: Tone } {
   if (!iso) return { text: "sem relatório ainda", tone: "none" };
-  const min = Math.floor((now - new Date(iso).getTime()) / 60000);
+  const sec = Math.max(0, Math.floor((now - new Date(iso).getTime()) / 1000));
   let text: string;
-  if (min < 1) text = "atualizado agora";
-  else if (min < 60) text = `atualizado há ${min} min`;
-  else if (min < 1440) text = `atualizado há ${Math.floor(min / 60)} h`;
-  else text = `atualizado há ${Math.floor(min / 1440)} d`;
-  const tone: Tone = min <= 6 ? "ok" : min <= 15 ? "warn" : "bad";
+  if (sec < 15) text = "atualizado agora";
+  else if (sec < 60) text = `atualizado há ${sec}s`;
+  else {
+    const min = Math.floor(sec / 60);
+    if (min < 60) text = `atualizado há ${min} min`;
+    else if (min < 1440) text = `atualizado há ${Math.floor(min / 60)} h`;
+    else text = `atualizado há ${Math.floor(min / 1440)} d`;
+  }
+  const tone: Tone = sec <= 40 ? "ok" : sec <= 90 ? "warn" : "bad";
   return { text, tone };
 }
 const TONE: Record<Tone, { dot: string; text: string; bg: string; label: string }> = {
@@ -40,7 +46,7 @@ export default function Connected() {
   const load = async () => {
     const { data } = await supabase
       .from("mikrotik_status")
-      .select("location_id, active_clients, user_count, last_report_at");
+      .select("location_id, active_clients, user_count, last_report_at, cpu_load");
     const m = new Map<string, Status>();
     const codes = new Set<string>();
     for (const r of (data ?? []) as Status[]) {
@@ -50,16 +56,23 @@ export default function Connected() {
     setStatuses(m);
 
     // Cruza o código do voucher conectado com o comprador (payment) p/ nome/telefone.
+    // Em vez do embed inverso vouchers->payments (que esbarrava em RLS e vinha
+    // vazio), fazemos dois selects DIRETOS — os mesmos acessos que Vendas/Vouchers
+    // já usam: vouchers (code->id) e payments (voucher_id->nome/telefone).
     if (codes.size) {
-      const { data: vs } = await supabase
-        .from("vouchers")
-        .select("code, payments(customer_name, customer_phone)")
-        .in("code", [...codes]);
       const b = new Map<string, Buyer>();
-      for (const v of (vs ?? []) as Array<{ code: string; payments: unknown }>) {
-        const pay = (Array.isArray(v.payments) ? v.payments[0] : v.payments) as
-          { customer_name?: string | null; customer_phone?: string | null } | null;
-        b.set(v.code, { name: pay?.customer_name ?? null, phone: pay?.customer_phone ?? null });
+      const { data: vs } = await supabase
+        .from("vouchers").select("id, code").in("code", [...codes]);
+      const idToCode = new Map<string, string>();
+      for (const v of (vs ?? []) as Array<{ id: string; code: string }>) idToCode.set(v.id, v.code);
+      const ids = [...idToCode.keys()];
+      if (ids.length) {
+        const { data: ps } = await supabase
+          .from("payments").select("voucher_id, customer_name, customer_phone").in("voucher_id", ids);
+        for (const p of (ps ?? []) as Array<{ voucher_id: string | null; customer_name: string | null; customer_phone: string | null }>) {
+          const code = p.voucher_id ? idToCode.get(p.voucher_id) : undefined;
+          if (code) b.set(code, { name: p.customer_name ?? null, phone: p.customer_phone ?? null });
+        }
       }
       setBuyers(b);
     } else {
@@ -110,6 +123,11 @@ export default function Connected() {
         const clients = st?.active_clients ?? [];
         const h = reportHealth(st?.last_report_at, now - clockOffset);
         const t = TONE[h.tone];
+        // CPU do roteador (só faz sentido quando o relatório está fresco; se
+        // Offline, o valor é antigo). Verde <60%, âmbar <85%, vermelho acima.
+        const cpu = h.tone === "bad" || h.tone === "none" ? null : st?.cpu_load;
+        const cpuTone: Tone = cpu == null ? "none" : cpu < 60 ? "ok" : cpu < 85 ? "warn" : "bad";
+        const ct = TONE[cpuTone];
         return (
           <div key={loc.id} className="rounded-[20px] border-2 border-[#D8E9D3] bg-white p-5">
             <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
@@ -121,10 +139,18 @@ export default function Connected() {
                   <span className="inline-flex items-center gap-1 text-[#6E9070]"><Clock className="h-3.5 w-3.5" /> {h.text}</span>
                 </p>
               </div>
-              <span className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-semibold"
-                style={{ background: t.bg, color: t.text }}>
-                <span className="h-2 w-2 rounded-full" style={{ background: t.dot }} /> {t.label}
-              </span>
+              <div className="flex items-center gap-2">
+                {cpu != null && (
+                  <span className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-semibold"
+                    style={{ background: ct.bg, color: ct.text }} title="Uso de CPU do roteador neste local">
+                    <span className="h-2 w-2 rounded-full" style={{ background: ct.dot }} /> CPU {cpu}%
+                  </span>
+                )}
+                <span className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-semibold"
+                  style={{ background: t.bg, color: t.text }}>
+                  <span className="h-2 w-2 rounded-full" style={{ background: t.dot }} /> {t.label}
+                </span>
+              </div>
             </div>
 
             {clients.length === 0 ? (
@@ -173,7 +199,7 @@ export default function Connected() {
       })}
 
       <div className="rounded-[20px] border border-[#D8E9D3] bg-[#E9F4E5] p-4 text-sm text-[#49784C]">
-        Cada roteador envia este relatório a cada ~3 min (scheduler <strong className="text-[#135B1D]">rv-report</strong>).
+        Cada roteador envia este relatório a cada ~10s (scheduler <strong className="text-[#135B1D]">rv-report</strong>).
         O selo funciona como sinal de vida: <strong className="text-[#135B1D]">Offline</strong> ou <strong className="text-[#135B1D]">Atrasado</strong>
         indica que o MikroTik pode estar sem internet. A tela atualiza sozinha quando chega um novo relatório.
       </div>
