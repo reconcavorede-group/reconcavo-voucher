@@ -39,13 +39,26 @@ export default function Locations() {
   const [gateway, setGateway] = useState("192.168.88.1");
   const [saving, setSaving] = useState(false);
   const [now, setNow] = useState(() => Date.now());
+  const [clockOffset, setClockOffset] = useState(0); // relógioPC - horaServidor
+  const [syncedAt, setSyncedAt] = useState<Map<string, string | null>>(new Map());
 
   useEffect(() => { document.title = "Locais — Recôncavo Voucher"; }, []);
   useEffect(() => { setRows(locations); }, [locations]);
-  // Atualiza os rótulos "sincronizado há X" sozinho a cada 30s.
+  // Mantém o "sincronizado há X" vivo sem F5: a cada 30s rebusca o last_synced_at
+  // de cada local (só esse campo, pra não sobrescrever edições em andamento nos
+  // rows) e reconta. Corrige o relógio do PC via server_now (igual Conectados).
   useEffect(() => {
-    const t = setInterval(() => setNow(Date.now()), 30_000);
-    return () => clearInterval(t);
+    let alive = true;
+    (supabase.rpc as (fn: string) => Promise<{ data: string | null }>)("server_now").then(({ data }) => {
+      if (alive && data) setClockOffset(Date.now() - new Date(data).getTime());
+    });
+    const pull = async () => {
+      const { data } = await supabase.from("locations").select("id, last_synced_at");
+      if (alive && data) setSyncedAt(new Map((data as { id: string; last_synced_at: string | null }[]).map((l) => [l.id, l.last_synced_at ?? null])));
+    };
+    pull();
+    const t = setInterval(() => { setNow(Date.now()); pull(); }, 30_000);
+    return () => { alive = false; clearInterval(t); };
   }, []);
 
   const add = async () => {
@@ -157,7 +170,7 @@ export default function Locations() {
               Link do captive portal deste local:
               <code className="rounded bg-[#F4F9F1] px-2 py-0.5 text-[#135B1D]">{storeUrl(r.slug)}</code>
               {(() => {
-                const s = syncLabel(r.last_synced_at, now);
+                const s = syncLabel(syncedAt.get(r.id) ?? r.last_synced_at, now - clockOffset);
                 return (
                   <span
                     className="ml-auto inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 font-semibold"
