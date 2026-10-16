@@ -36,17 +36,34 @@ export default function Sales() {
   // Quando ligado, ignora o local selecionado e mostra as vendas de TODOS os
   // pontos num extrato único (com a coluna Local).
   const [allLocs, setAllLocs] = useState(false);
+  // Quem está conectado AGORA, da fonte confiável: active_clients do rv-report
+  // (atualiza a cada 10s). A luz de conexão usa ISTO, não o flag vouchers.connected
+  // — que fica preso em "conectado" quando a sessão cai sem logout limpo (timeout,
+  // reboot, voucher expirado). Map code -> uptime ao vivo.
+  const [activeUptime, setActiveUptime] = useState<Map<string, string>>(new Map());
   const locName = (id: string) => locations.find((l) => l.id === id)?.name ?? "—";
 
   useEffect(() => { document.title = "Vendas — Recôncavo Voucher"; }, []);
 
+  const loadActive = async () => {
+    const { data } = await supabase.from("mikrotik_status").select("active_clients");
+    const m = new Map<string, string>();
+    for (const row of (data ?? []) as { active_clients: { code?: string; uptime?: string }[] }[]) {
+      for (const c of row.active_clients ?? []) if (c?.code) m.set(c.code, c.uptime ?? "");
+    }
+    setActiveUptime(m);
+  };
+
   useEffect(() => {
     load();
-    // Escuta pagamentos (novas vendas/status) E vouchers (luz de conexão/uptime,
-    // gravados pelo MikroTik no login/logout) para o extrato atualizar ao vivo.
+    loadActive();
+    // Escuta pagamentos (novas vendas/status) E vouchers (código entregue/MAC)
+    // para o extrato atualizar ao vivo.
     const ch = supabase.channel("sales").on("postgres_changes", { event: "*", schema: "public", table: "payments" }, load).subscribe();
     const chV = supabase.channel("sales-vouchers").on("postgres_changes", { event: "*", schema: "public", table: "vouchers" }, load).subscribe();
-    return () => { supabase.removeChannel(ch); supabase.removeChannel(chV); };
+    // Conexão ao vivo (active_clients muda a cada 10s): atualiza a cada 15s.
+    const t = setInterval(loadActive, 15_000);
+    return () => { supabase.removeChannel(ch); supabase.removeChannel(chV); clearInterval(t); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [locationId, allLocs]);
 
@@ -71,8 +88,8 @@ export default function Sales() {
       s.payment_method, statusLabel(s.status),
       s.completed_at ? new Date(s.completed_at).toLocaleString("pt-BR") : "",
       s.vouchers?.code ?? "",
-      s.vouchers?.connected === true ? "Conectado" : s.vouchers?.connected === false ? "Desconectado" : "",
-      s.vouchers?.uptime ?? "",
+      activeUptime.has(s.vouchers?.code ?? "") ? "Conectado" : (s.vouchers?.activated_at ? "Desconectado" : ""),
+      activeUptime.get(s.vouchers?.code ?? "") || s.vouchers?.uptime || "",
       s.vouchers?.mac_address ?? "",
     ]);
     const csv = [header, ...rows].map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\n");
@@ -159,8 +176,8 @@ export default function Sales() {
                   <td className="px-4 py-3 text-xs uppercase text-[#49784C]">{s.payment_method}</td>
                   <td className="px-4 py-3"><StatusBadge status={s.status} /></td>
                   <td className="px-4 py-3 font-mono text-xs font-semibold text-[#135B1D]">{s.vouchers?.code ?? "—"}</td>
-                  <td className="px-4 py-3"><ConnLight connected={s.vouchers?.connected ?? null} /></td>
-                  <td className="px-4 py-3 font-mono text-xs text-[#49784C]">{s.vouchers?.uptime ?? "—"}</td>
+                  <td className="px-4 py-3"><ConnLight live={activeUptime.has(s.vouchers?.code ?? "")} activated={!!s.vouchers?.activated_at} /></td>
+                  <td className="px-4 py-3 font-mono text-xs text-[#49784C]">{activeUptime.get(s.vouchers?.code ?? "") || s.vouchers?.uptime || "—"}</td>
                   <td className="px-4 py-3 font-mono text-xs text-[#49784C]">{s.vouchers?.mac_address ?? "—"}</td>
                   <td className="px-4 py-3 text-right">
                     <Link to={`/order/${s.id}`} target="_blank" className="inline-flex rounded-lg p-2 text-[#135B1D] transition hover:bg-[#E3F1DE]"><Eye className="h-4 w-4" /></Link>
@@ -174,12 +191,13 @@ export default function Sales() {
   );
 }
 
-// Luz de conexão do voucher: verde = conectado agora, vermelho = desconectado
-// (já usou e caiu), cinza = ainda não conectou nenhuma vez.
-function ConnLight({ connected }: { connected: boolean | null }) {
-  const cfg = connected === true
+// Luz de conexão do voucher: verde = conectado AGORA (está no active_clients do
+// rv-report), vermelho = já foi usado e não está mais conectado, cinza = nunca
+// conectou. Não usa mais o flag vouchers.connected (que ficava preso em verde).
+function ConnLight({ live, activated }: { live: boolean; activated: boolean }) {
+  const cfg = live
     ? { dot: "bg-[#22C55E]", ring: "shadow-[0_0_0_3px_rgba(34,197,94,0.2)]", label: "Conectado", text: "text-[#1E6B26]" }
-    : connected === false
+    : activated
     ? { dot: "bg-[#EF4444]", ring: "", label: "Desconectado", text: "text-[#B4432E]" }
     : { dot: "bg-[#C9D3C6]", ring: "", label: "—", text: "text-[#6E9070]" };
   return (
