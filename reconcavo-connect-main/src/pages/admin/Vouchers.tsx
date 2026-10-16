@@ -29,7 +29,7 @@ interface Batch {
 }
 
 export default function Vouchers() {
-  const { locationId, current, isAdmin } = useAdminLocation();
+  const { locationId, current, canWrite } = useAdminLocation();
   const [plans, setPlans] = useState<Plan[]>([]);
   const [vouchers, setVouchers] = useState<Voucher[]>([]);
   const [planId, setPlanId] = useState<string>("");
@@ -126,8 +126,8 @@ export default function Vouchers() {
 
   return (
     <div className="space-y-5" style={{ animation: "fadeUp .3s ease" }}>
-      {/* Painel escuro: gerar lote (só admin) */}
-      {isAdmin && (
+      {/* Painel escuro: gerar lote (admin ou gerente dos pontos dele) */}
+      {canWrite && (
       <div className="rounded-[20px] border border-[#3F9C45] bg-[#135B1D] p-6">
         <h3 className="mb-1 font-bold text-white">Gerar novo lote</h3>
         <p className="mb-4 text-sm text-[#B7E3B2]">Gere o lote → baixe o .rsc → importe no MikroTik → confirme a importação.</p>
@@ -188,7 +188,7 @@ export default function Vouchers() {
                     className="flex items-center gap-1.5 rounded-xl bg-[#135B1D] px-3 py-2 text-sm font-semibold text-white transition hover:brightness-[1.1]">
                     <Download className="h-4 w-4" /> Baixar .rsc
                   </button>
-                  {isAdmin && gerados > 0 && (
+                  {canWrite && gerados > 0 && (
                     <button onClick={() => confirmImport(b)}
                       className="flex items-center gap-1.5 rounded-xl bg-[#B4F04B] px-3 py-2 text-sm font-bold text-[#135B1D] transition hover:brightness-[1.06]">
                       <CheckCircle2 className="h-4 w-4" /> Confirmar importação

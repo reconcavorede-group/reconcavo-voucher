@@ -12,9 +12,10 @@ const NAV = [
   { to: "/admin/vouchers", label: "Vouchers", title: "Vouchers", sub: "Gere lotes e gerencie o estoque do MikroTik" },
   { to: "/admin/sales", label: "Vendas", title: "Vendas", sub: "Histórico de pedidos e faturamento" },
   { to: "/admin/charts", label: "Gráficos", title: "Gráficos", sub: "Comparativo de vendas e faturamento entre os pontos" },
-  { to: "/admin/settings", label: "Planos", title: "Planos", sub: "Configure os planos exibidos na loja" },
-  { to: "/admin/mikrotik", label: "MikroTik", title: "MikroTik", sub: "Importação e limpeza de usuários do roteador" },
-  { to: "/admin/locations", label: "Locais", title: "Locais", sub: "Gerencie seus pontos de Wi-Fi (MikroTiks)" },
+  { to: "/admin/settings", label: "Planos", title: "Planos", sub: "Configure os planos exibidos na loja", adminOnly: true },
+  { to: "/admin/mikrotik", label: "MikroTik", title: "MikroTik", sub: "Importação e limpeza de usuários do roteador", adminOnly: true },
+  { to: "/admin/locations", label: "Locais", title: "Locais", sub: "Gerencie seus pontos de Wi-Fi (MikroTiks)", adminOnly: true },
+  { to: "/admin/users", label: "Usuários", title: "Usuários", sub: "Convide pessoas e defina pontos e nível de acesso", adminOnly: true },
 ];
 
 // Seletor de local — define qual ponto (MikroTik) o painel está gerenciando.
@@ -43,6 +44,8 @@ function AdminShell() {
   const { pathname } = useLocation();
   const { isAdmin } = useAdminLocation();
   const active = NAV.find((n) => (n.end ? pathname === n.to : pathname.startsWith(n.to))) ?? NAV[0];
+  // Abas de gestão (Planos/Locais/MikroTik/Usuários) só p/ admin.
+  const navItems = NAV.filter((n) => !n.adminOnly || isAdmin);
   // O seletor de local não aparece em Locais (global) nem em Gráficos (compara todos).
   const showSelector = pathname !== "/admin/locations" && pathname !== "/admin/charts" && pathname !== "/admin/connected";
 
@@ -84,7 +87,7 @@ function AdminShell() {
             {showSelector && <LocationSelector />}
           </div>
           <nav className="mt-5 flex flex-wrap gap-2">
-            {NAV.map((n) => (
+            {navItems.map((n) => (
               <NavLink key={n.to} to={n.to} end={n.end}
                 className={({ isActive }) =>
                   `rounded-full px-4 py-2 text-sm font-semibold transition ${
