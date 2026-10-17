@@ -7,9 +7,20 @@ import { useAdminLocation } from "@/lib/adminLocation";
 interface AppUser {
   user_id: string;
   email: string;
+  name?: string | null;
+  phone?: string | null;
   role: string;
   location_ids: string[];
   created_at: string;
+}
+
+// Máscara de telefone BR: (75) 99999-9999
+function maskPhone(v: string): string {
+  const d = v.replace(/\D/g, "").slice(0, 11);
+  if (d.length <= 2) return d.length ? `(${d}` : "";
+  if (d.length <= 6) return `(${d.slice(0, 2)}) ${d.slice(2)}`;
+  if (d.length <= 10) return `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`;
+  return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
 }
 
 const ROLES: [string, string, string][] = [
@@ -26,6 +37,8 @@ export default function Users() {
 
   // formulário de convite
   const [email, setEmail] = useState("");
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
   const [role, setRole] = useState("gerente");
   const [locIds, setLocIds] = useState<Set<string>>(new Set());
   const [inviting, setInviting] = useState(false);
@@ -60,6 +73,8 @@ export default function Users() {
       body: {
         action: "invite",
         email: mail,
+        name: name.trim(),
+        phone: phone.trim(),
         role,
         location_ids: role === "admin" ? [] : [...locIds],
         redirect_to: `${window.location.origin}/reset-senha`,
@@ -69,7 +84,7 @@ export default function Users() {
     const err = error || (data as { error?: string })?.error;
     if (err) return toast.error(typeof err === "string" ? err : "Falha ao convidar");
     toast.success("Convite enviado! O usuário vai receber um e-mail para definir a senha.");
-    setEmail(""); setRole("gerente"); setLocIds(new Set());
+    setEmail(""); setName(""); setPhone(""); setRole("gerente"); setLocIds(new Set());
     load();
   };
 
@@ -79,6 +94,18 @@ export default function Users() {
       <div className="rounded-[20px] border border-[#3F9C45] bg-[#135B1D] p-6">
         <h3 className="mb-1 flex items-center gap-2 font-bold text-white"><UserPlus className="h-5 w-5" /> Convidar usuário</h3>
         <p className="mb-4 text-sm text-[#B7E3B2]">A pessoa recebe um e-mail e define a própria senha pelo link.</p>
+        <div className="mb-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div className="space-y-1">
+            <label className="text-xs text-[#B7E3B2]">Nome</label>
+            <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Nome do usuário" maxLength={80}
+              className="min-h-[44px] w-full rounded-xl border border-[#3F9C45] bg-[#1B6B24] px-3 text-white placeholder:text-[#8FBF8C] focus:outline-none focus-visible:ring-[3px] focus-visible:ring-[#B4F04B]" />
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs text-[#B7E3B2]">WhatsApp / Telefone</label>
+            <input value={phone} onChange={(e) => setPhone(maskPhone(e.target.value))} placeholder="(75) 99999-9999" inputMode="numeric" maxLength={16}
+              className="min-h-[44px] w-full rounded-xl border border-[#3F9C45] bg-[#1B6B24] px-3 text-white placeholder:text-[#8FBF8C] focus:outline-none focus-visible:ring-[3px] focus-visible:ring-[#B4F04B]" />
+          </div>
+        </div>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1.4fr_1fr]">
           <div className="space-y-1">
             <label className="text-xs text-[#B7E3B2]">E-mail</label>
@@ -170,8 +197,14 @@ function UserRow({ user, locations, onChanged }: { user: AppUser; locations: { i
   return (
     <div className="rounded-[20px] border-2 border-[#D8E9D3] bg-white p-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2 font-semibold text-[#152B14]">
-          <ShieldCheck className="h-4 w-4 text-[#2E8B3D]" /> {user.email}
+        <div>
+          <div className="flex items-center gap-2 font-semibold text-[#152B14]">
+            <ShieldCheck className="h-4 w-4 text-[#2E8B3D]" /> {user.name || user.email}
+          </div>
+          <div className="mt-0.5 pl-6 text-xs text-[#6E9070]">
+            {user.email}
+            {user.phone ? <> · <a href={`https://wa.me/55${user.phone.replace(/\D/g, "")}`} target="_blank" rel="noreferrer" className="text-[#1E8A2C] hover:underline">{user.phone}</a></> : ""}
+          </div>
         </div>
         <div className="flex items-center gap-2">
           <select value={role} onChange={(e) => setRole(e.target.value)}

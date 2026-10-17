@@ -42,13 +42,16 @@ Deno.serve(async (req) => {
     // ---- convidar usuário -------------------------------------------------
     const email = String(body.email ?? "").trim().toLowerCase();
     const role = String(body.role ?? "visualizador");
+    const name = String(body.name ?? "").trim();
+    const phone = String(body.phone ?? "").trim();
     const locationIds: string[] = Array.isArray(body.location_ids) ? body.location_ids : [];
     const redirectTo = String(body.redirect_to ?? "");
     if (!email) return jsonResponse({ error: "e-mail obrigatório" }, 400);
     if (!ROLES.includes(role)) return jsonResponse({ error: "nível de acesso inválido" }, 400);
 
+    // Nome/telefone vão no user_metadata do usuário (auth.users.raw_user_meta_data).
     const { data: inv, error: invErr } = await svc.auth.admin.inviteUserByEmail(
-      email, redirectTo ? { redirectTo } : undefined,
+      email, { data: { name, phone }, ...(redirectTo ? { redirectTo } : {}) },
     );
     if (invErr || !inv?.user) {
       return jsonResponse({ error: invErr?.message ?? "falha ao enviar o convite" }, 400);
