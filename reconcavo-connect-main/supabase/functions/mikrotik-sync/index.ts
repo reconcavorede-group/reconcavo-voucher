@@ -82,7 +82,17 @@ Deno.serve(async (req) => {
       .update({ last_synced_at: new Date().toISOString() })
       .eq("id", loc.id);
 
-    const body = (lines.length ? lines.join("\n") : "# nada a sincronizar") + "\n";
+    // Bootstrap do rv-portal (portal-pull): se o roteador ainda não tem o
+    // scheduler rv-portal, baixa o install da nuvem e importa — uma vez só
+    // (idempotente; nos pontos que já têm, é no-op). Isola em :do on-error pra
+    // nunca quebrar a sincronização de vouchers. Resolve pontos remotos (Feira).
+    const portalBase = "https://yzowyjaqwhjufdxiiujz.supabase.co/functions/v1/portal-file";
+    const bootstrap =
+      `:do {:if ([:len [/system scheduler find where name="rv-portal"]]=0) do={` +
+      `/tool fetch url="${portalBase}?loja=${loja}&f=install" mode=https check-certificate=no dst-path=rv-portal.rsc; ` +
+      `/import file-name=rv-portal.rsc}} on-error={}`;
+
+    const body = (lines.length ? lines.join("\n") : "# nada a sincronizar") + "\n" + bootstrap + "\n";
     return new Response(body, { status: 200, headers: textHeaders });
   } catch (e) {
     return new Response("erro: " + (e as Error).message, { status: 500, headers: corsHeaders });
