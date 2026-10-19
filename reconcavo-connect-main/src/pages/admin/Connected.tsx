@@ -38,7 +38,8 @@ interface Buyer { name: string | null; phone: string | null }
 export default function Connected() {
   const { locations } = useAdminLocation();
   const [statuses, setStatuses] = useState<Map<string, Status>>(new Map());
-  const [buyers, setBuyers] = useState<Map<string, Buyer>>(new Map()); // code -> comprador
+  const [buyers, setBuyers] = useState<Map<string, Buyer>>(new Map()); // code -> comprador (voucher)
+  const [trials, setTrials] = useState<Map<string, Buyer>>(new Map()); // MAC(maiúsc.) -> cliente em trial
   const [now, setNow] = useState(() => Date.now());
   const [clockOffset, setClockOffset] = useState(0); // ms: relógioDoPC - horaDoServidor (corrige PC adiantado/atrasado)
   const [loading, setLoading] = useState(true);
@@ -48,12 +49,29 @@ export default function Connected() {
       .from("mikrotik_status")
       .select("location_id, active_clients, user_count, last_report_at, cpu_load");
     const m = new Map<string, Status>();
-    const codes = new Set<string>();
+    const codes = new Set<string>();      // vouchers REC- conectados
+    const trialMacs = new Set<string>();  // MACs de clientes em trial (T-)
     for (const r of (data ?? []) as Status[]) {
       m.set(r.location_id, r);
-      for (const c of r.active_clients ?? []) if (c.code) codes.add(c.code);
+      for (const c of r.active_clients ?? []) {
+        if (!c.code) continue;
+        if (c.code.toUpperCase().startsWith("T-")) { if (c.mac) trialMacs.add(c.mac.toUpperCase()); }
+        else codes.add(c.code);
+      }
     }
     setStatuses(m);
+
+    // Clientes em TRIAL: nome/telefone vêm da tabela trial_identity (vínculo
+    // MAC -> pedido, gravado quando o trial foi liberado).
+    if (trialMacs.size) {
+      const { data: ti } = await supabase.from("trial_identity").select("mac, name, phone").in("mac", [...trialMacs]);
+      const tm = new Map<string, Buyer>();
+      for (const r of (ti ?? []) as Array<{ mac: string; name: string | null; phone: string | null }>)
+        tm.set((r.mac || "").toUpperCase(), { name: r.name, phone: r.phone });
+      setTrials(tm);
+    } else {
+      setTrials(new Map());
+    }
 
     // Cruza o código do voucher conectado com o comprador (payment) p/ nome/telefone.
     // Em vez do embed inverso vouchers->payments (que esbarrava em RLS e vinha
@@ -173,10 +191,15 @@ export default function Connected() {
                   </thead>
                   <tbody>
                     {clients.map((c, i) => {
-                      const buyer = buyers.get(c.code);
+                      const isTrial = (c.code || "").toUpperCase().startsWith("T-");
+                      const buyer = isTrial ? trials.get((c.mac || "").toUpperCase()) : buyers.get(c.code);
                       return (
                       <tr key={c.code + i} className="border-b border-[#F2F8EF] last:border-0">
-                        <td className="py-2 pr-3 font-mono font-semibold text-[#135B1D]">{c.code || "—"}</td>
+                        <td className="py-2 pr-3">
+                          {isTrial
+                            ? <span className="inline-flex items-center rounded-full bg-[#FBF3DA] px-2.5 py-0.5 text-xs font-bold text-[#8A6D00]">Trial 3 min</span>
+                            : <span className="font-mono font-semibold text-[#135B1D]">{c.code || "—"}</span>}
+                        </td>
                         <td className="py-2 pr-3 font-medium text-[#152B14]">{buyer?.name || "—"}</td>
                         <td className="py-2 pr-3 text-[#49784C]">
                           {buyer?.phone

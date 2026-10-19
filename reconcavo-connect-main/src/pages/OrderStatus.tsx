@@ -38,6 +38,18 @@ export default function OrderStatus() {
     if (!id) return;
     document.title = "Acompanhar pedido — Recôncavo Voucher";
 
+    // Trial: o portal passa o MAC do aparelho no #tmac=<mac> (sobrevive ao
+    // MikroTik). Com internet do trial já ativa, vinculamos o MAC ao pedido
+    // (que tem nome/telefone) para aparecer na aba Conectados. Depois limpa a URL.
+    try {
+      const hp = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+      const tmac = hp.get("tmac") || new URLSearchParams(window.location.search).get("tmac");
+      if (tmac) {
+        supabase.functions.invoke("trial-link", { body: { order_id: id, mac: tmac } });
+        history.replaceState(null, "", window.location.pathname + window.location.search);
+      }
+    } catch { /* ignora */ }
+
     const load = async () => {
       const { data: o } = await supabase.from("payments").select("*").eq("id", id).maybeSingle();
       setOrder(o as Order | null);

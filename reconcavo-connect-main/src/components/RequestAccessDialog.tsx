@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { toast } from "sonner";
@@ -33,7 +32,6 @@ function maskPhone(v: string): string {
 // pedido e leva para a tela de pagamento (Pix/cartão), preservando a lógica
 // existente (Supabase + Mercado Pago).
 export function RequestAccessDialog({ plan, open, onOpenChange }: Props) {
-  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
@@ -66,7 +64,12 @@ export function RequestAccessDialog({ plan, open, onOpenChange }: Props) {
     setLoading(false);
     if (error) { toast.error("Erro ao criar pedido: " + error.message); return; }
     onOpenChange(false);
-    navigate(`/order/${data.id}`);
+    // Libera os 3 min grátis AUTOMATICAMENTE: passa pelo portal do MikroTik
+    // (/login?dst=<pedido>), que ativa o trial e redireciona de volta pra tela do
+    // pedido. É também o momento em que o portal conhece o MAC do aparelho, então
+    // o nome/telefone ficam vinculados ao cliente em trial (via #tmac).
+    const orderUrl = `${window.location.origin}/order/${data.id}`;
+    window.location.href = `http://192.168.88.1/login?dst=${encodeURIComponent(orderUrl)}`;
   };
 
   return (
