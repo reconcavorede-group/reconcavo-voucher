@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Clock, XCircle, Copy, ExternalLink, PackageX, Check, Wifi } from "lucide-react";
 import { formatBRL, statusLabel } from "@/lib/voucher";
 import { buildConnectUrl } from "@/lib/config";
+import { PhoneField } from "@/components/PhoneField";
 import { toast } from "sonner";
 import { PixPayment } from "@/components/PixPayment";
 import { CardPayment } from "@/components/CardPayment";
@@ -312,8 +313,10 @@ function CustomerForm({ order }: { order: Order }) {
           <input id="cf-name" className={field} value={name} onChange={(e) => setName(e.target.value)} placeholder="Seu nome" maxLength={80} />
         </div>
         <div className="space-y-1">
-          <label htmlFor="cf-phone" className="text-xs text-[#49784C]">WhatsApp</label>
-          <input id="cf-phone" className={field} value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="(75) 99999-9999" maxLength={20} />
+          <label className="text-xs text-[#49784C]">WhatsApp</label>
+          <PhoneField value={phone} onChange={setPhone}
+            selectClassName={`${field} max-w-[44%] px-2 text-[13px]`}
+            inputClassName={field} />
         </div>
       </div>
       <button onClick={save} disabled={saving}

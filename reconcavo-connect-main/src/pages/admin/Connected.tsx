@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Wifi, Users, Clock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAdminLocation } from "@/lib/adminLocation";
+import { waNumber } from "@/lib/phone";
 
 interface Client { code: string; ip: string; mac: string; uptime: string; left: string }
 interface Status { location_id: string; active_clients: Client[]; user_count: number | null; last_report_at: string | null; cpu_load: number | null }
@@ -203,7 +204,7 @@ export default function Connected() {
                         <td className="py-2 pr-3 font-medium text-[#152B14]">{buyer?.name || "—"}</td>
                         <td className="py-2 pr-3 text-[#49784C]">
                           {buyer?.phone
-                            ? <a href={`https://wa.me/55${buyer.phone.replace(/\D/g, "")}`} target="_blank" rel="noreferrer" className="text-[#1E8A2C] hover:underline">{buyer.phone}</a>
+                            ? <a href={`https://wa.me/${waNumber(buyer.phone)}`} target="_blank" rel="noreferrer" className="text-[#1E8A2C] hover:underline">{buyer.phone}</a>
                             : "—"}
                         </td>
                         <td className="py-2 pr-3 font-mono text-[#49784C]">{c.ip || "—"}</td>

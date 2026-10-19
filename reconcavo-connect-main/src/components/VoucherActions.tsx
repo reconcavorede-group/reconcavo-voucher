@@ -2,6 +2,7 @@ import { Printer, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { formatBRL, formatDuration } from "@/lib/voucher";
+import { waNumber } from "@/lib/phone";
 
 interface Voucher {
   code: string;
@@ -21,9 +22,9 @@ export function VoucherActions({ voucher, phone }: { voucher: Voucher; phone?: s
     `Conecte-se à rede e faça login com seu usuário e senha. Bom proveito! 🚀`;
 
   const handleShare = () => {
-    const cleanPhone = phone?.replace(/\D/g, "");
-    const url = cleanPhone
-      ? `https://wa.me/55${cleanPhone}?text=${encodeURIComponent(message)}`
+    const wa = waNumber(phone);
+    const url = wa
+      ? `https://wa.me/${wa}?text=${encodeURIComponent(message)}`
       : `https://wa.me/?text=${encodeURIComponent(message)}`;
     window.open(url, "_blank");
   };

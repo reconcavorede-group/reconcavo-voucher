@@ -3,6 +3,8 @@ import { Loader2, UserPlus, Save, Trash2, Mail, ShieldCheck, Info } from "lucide
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAdminLocation } from "@/lib/adminLocation";
+import { PhoneField } from "@/components/PhoneField";
+import { waNumber } from "@/lib/phone";
 
 interface AppUser {
   user_id: string;
@@ -12,15 +14,6 @@ interface AppUser {
   role: string;
   location_ids: string[];
   created_at: string;
-}
-
-// Máscara de telefone BR: (75) 99999-9999
-function maskPhone(v: string): string {
-  const d = v.replace(/\D/g, "").slice(0, 11);
-  if (d.length <= 2) return d.length ? `(${d}` : "";
-  if (d.length <= 6) return `(${d.slice(0, 2)}) ${d.slice(2)}`;
-  if (d.length <= 10) return `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`;
-  return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
 }
 
 const ROLES: [string, string, string][] = [
@@ -102,8 +95,9 @@ export default function Users() {
           </div>
           <div className="space-y-1">
             <label className="text-xs text-[#B7E3B2]">WhatsApp / Telefone</label>
-            <input value={phone} onChange={(e) => setPhone(maskPhone(e.target.value))} placeholder="(75) 99999-9999" inputMode="numeric" maxLength={16}
-              className="min-h-[44px] w-full rounded-xl border border-[#3F9C45] bg-[#1B6B24] px-3 text-white placeholder:text-[#8FBF8C] focus:outline-none focus-visible:ring-[3px] focus-visible:ring-[#B4F04B]" />
+            <PhoneField value={phone} onChange={setPhone}
+              selectClassName="min-h-[44px] max-w-[44%] rounded-xl border border-[#3F9C45] bg-[#1B6B24] px-2 text-[13px] text-white focus:outline-none focus-visible:ring-[3px] focus-visible:ring-[#B4F04B] [&>option]:text-[#152B14]"
+              inputClassName="min-h-[44px] w-full rounded-xl border border-[#3F9C45] bg-[#1B6B24] px-3 text-white placeholder:text-[#8FBF8C] focus:outline-none focus-visible:ring-[3px] focus-visible:ring-[#B4F04B]" />
           </div>
         </div>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1.4fr_1fr]">
@@ -203,7 +197,7 @@ function UserRow({ user, locations, onChanged }: { user: AppUser; locations: { i
           </div>
           <div className="mt-0.5 pl-6 text-xs text-[#6E9070]">
             {user.email}
-            {user.phone ? <> · <a href={`https://wa.me/55${user.phone.replace(/\D/g, "")}`} target="_blank" rel="noreferrer" className="text-[#1E8A2C] hover:underline">{user.phone}</a></> : ""}
+            {user.phone ? <> · <a href={`https://wa.me/${waNumber(user.phone)}`} target="_blank" rel="noreferrer" className="text-[#1E8A2C] hover:underline">{user.phone}</a></> : ""}
           </div>
         </div>
         <div className="flex items-center gap-2">
