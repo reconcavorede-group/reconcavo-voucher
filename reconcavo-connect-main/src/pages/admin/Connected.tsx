@@ -198,7 +198,7 @@ export default function Connected() {
                       <tr key={c.code + i} className="border-b border-[#F2F8EF] last:border-0">
                         <td className="py-2 pr-3">
                           {isTrial
-                            ? <span className="inline-flex items-center rounded-full bg-[#FBF3DA] px-2.5 py-0.5 text-xs font-bold text-[#8A6D00]">Trial 3 min</span>
+                            ? <span className="inline-flex items-center rounded-full bg-[#FBF3DA] px-2.5 py-0.5 text-xs font-bold text-[#8A6D00]">Trial</span>
                             : <span className="font-mono font-semibold text-[#135B1D]">{c.code || "—"}</span>}
                         </td>
                         <td className="py-2 pr-3 font-medium text-[#152B14]">{buyer?.name || "—"}</td>

@@ -46,6 +46,27 @@ Deno.serve(async (req) => {
 
     const total = parseInt(totalRaw, 10);
 
+    // LOG DE TRIALS: compara o snapshot ANTERIOR com o atual. Todo MAC de trial
+    // (code começa com "T-") que aparece agora e NÃO estava no relatório anterior
+    // é uma nova sessão de trial → registra 1 linha em trial_log. Dedup natural
+    // por sessão (enquanto o aparelho continua conectado, não registra de novo).
+    try {
+      const { data: prev } = await supabase
+        .from("mikrotik_status").select("active_clients")
+        .eq("location_id", loc.id).maybeSingle();
+      const isTrial = (c: { code?: string }) => (c.code ?? "").toUpperCase().startsWith("T-");
+      const prevTrialMacs = new Set(
+        ((prev?.active_clients as { code?: string; mac?: string }[] | null) ?? [])
+          .filter(isTrial).map((c) => (c.mac ?? "").toUpperCase()).filter(Boolean),
+      );
+      const novas = active
+        .filter((c) => isTrial(c) && c.mac && !prevTrialMacs.has(c.mac.toUpperCase()))
+        .map((c) => ({ mac: c.mac.toUpperCase(), location_id: loc.id }));
+      if (novas.length) {
+        await supabase.from("trial_log").insert(novas).then(() => {}, () => {});
+      }
+    } catch { /* nunca quebra o relatório principal */ }
+
     const { error } = await supabase.from("mikrotik_status").upsert({
       location_id: loc.id,
       active_clients: active,

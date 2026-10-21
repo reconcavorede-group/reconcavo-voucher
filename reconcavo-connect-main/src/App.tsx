@@ -16,6 +16,7 @@ import Mikrotik from "./pages/admin/Mikrotik";
 import Locations from "./pages/admin/Locations";
 import Charts from "./pages/admin/Charts";
 import Connected from "./pages/admin/Connected";
+import Trials from "./pages/admin/Trials";
 import Users from "./pages/admin/Users";
 
 const queryClient = new QueryClient();
@@ -39,6 +40,7 @@ const App = () => (
             <Route path="locations" element={<Locations />} />
             <Route path="charts" element={<Charts />} />
             <Route path="connected" element={<Connected />} />
+            <Route path="trials" element={<Trials />} />
             <Route path="users" element={<Users />} />
           </Route>
           <Route path="*" element={<NotFound />} />

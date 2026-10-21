@@ -92,7 +92,16 @@ Deno.serve(async (req) => {
       `/tool fetch url="${portalBase}?loja=${loja}&f=install" mode=https check-certificate=no dst-path=rv-portal.rsc; ` +
       `/import file-name=rv-portal.rsc}} on-error={}`;
 
-    const body = (lines.length ? lines.join("\n") : "# nada a sincronizar") + "\n" + bootstrap + "\n";
+    // Quota de TRIAL controlada pela nuvem: 4 acessos de 3 min por 12h = 12m de
+    // uptime acumulado por aparelho a cada 12h. Idempotente (set no mesmo valor
+    // não reinicia contador de ninguém). Reaplicado a cada sync → todos os pontos
+    // convergem sozinhos, inclusive os remotos (Feira). Isolado em :do on-error.
+    const trialCfg =
+      `:do {/ip hotspot profile set [find name="hsprof1"] ` +
+      `trial-uptime-limit=12m trial-uptime-reset=12h} on-error={}`;
+
+    const body = (lines.length ? lines.join("\n") : "# nada a sincronizar") +
+      "\n" + bootstrap + "\n" + trialCfg + "\n";
     return new Response(body, { status: 200, headers: textHeaders });
   } catch (e) {
     return new Response("erro: " + (e as Error).message, { status: 500, headers: corsHeaders });

@@ -9,6 +9,7 @@ import { Loader2, LogOut, ExternalLink, MapPin, Eye } from "lucide-react";
 const NAV = [
   { to: "/admin", label: "Dashboard", end: true, title: "Dashboard", sub: "Acompanhe a operação em tempo real" },
   { to: "/admin/connected", label: "Conectados", title: "Conectados", sub: "Quem está usando o Wi-Fi agora em cada ponto" },
+  { to: "/admin/trials", label: "Trials", title: "Trials", sub: "Quem pega acesso gratuito e se já virou cliente" },
   { to: "/admin/vouchers", label: "Vouchers", title: "Vouchers", sub: "Gere lotes e gerencie o estoque do MikroTik" },
   { to: "/admin/sales", label: "Vendas", title: "Vendas", sub: "Histórico de pedidos e faturamento" },
   { to: "/admin/charts", label: "Gráficos", title: "Gráficos", sub: "Comparativo de vendas e faturamento entre os pontos" },
