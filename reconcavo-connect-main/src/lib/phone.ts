@@ -71,6 +71,16 @@ export function isValidPhone(code: string, national: string): boolean {
   return code === "55" ? (n === 10 || n === 11) : n >= 6;
 }
 
+// Formata pra EXIBIÇÃO: Brasil -> (75) 99999-9999; internacional -> +<DDI> <num>.
+// Aceita E.164 novo ("+55...") ou número legado nacional BR.
+export function formatDisplay(phone?: string | null): string {
+  const raw = (phone ?? "").trim();
+  if (!raw) return "";
+  const { code, national } = parseE164(raw);
+  if (code === "55") return formatNational("55", national);
+  return `+${code} ${formatNational(code, national)}`.trim();
+}
+
 // Dígitos p/ wa.me (com DDI). Aceita E.164 novo ou legado nacional BR.
 export function waNumber(phone?: string | null): string {
   const raw = (phone ?? "").trim();

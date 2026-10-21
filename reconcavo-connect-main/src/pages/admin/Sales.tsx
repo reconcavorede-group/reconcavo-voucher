@@ -10,7 +10,7 @@ import { toast } from "sonner";
 import { Link } from "react-router-dom";
 import { formatBRL, statusLabel } from "@/lib/voucher";
 import { useAdminLocation } from "@/lib/adminLocation";
-import { waNumber } from "@/lib/phone";
+import { waNumber, formatDisplay } from "@/lib/phone";
 
 interface Sale {
   id: string; plan_name: string; amount: number; payment_method: string; status: string;
@@ -85,7 +85,7 @@ export default function Sales() {
     const header = ["ID", "Data", ...(allLocs ? ["Local"] : []), "Cliente", "Telefone", "Plano", "Valor", "Método", "Status", "Confirmado em", "Código", "Conexão", "Uptime", "Dispositivo (MAC)"];
     const rows = filtered.map((s) => [
       s.id, new Date(s.created_at).toLocaleString("pt-BR"), ...(allLocs ? [locName(s.location_id)] : []), s.customer_name ?? "",
-      s.customer_phone ?? "", s.plan_name, Number(s.amount).toFixed(2),
+      formatDisplay(s.customer_phone), s.plan_name, Number(s.amount).toFixed(2),
       s.payment_method, statusLabel(s.status),
       s.completed_at ? new Date(s.completed_at).toLocaleString("pt-BR") : "",
       s.vouchers?.code ?? "",
@@ -169,7 +169,7 @@ export default function Sales() {
                   <td className="px-4 py-3 font-medium text-[#152B14]">{s.customer_name ?? "—"}</td>
                   <td className="px-4 py-3 text-[#49784C]">
                     {s.customer_phone
-                      ? <a href={`https://wa.me/${waNumber(s.customer_phone)}`} target="_blank" rel="noreferrer" className="text-[#1E8A2C] hover:underline">{s.customer_phone}</a>
+                      ? <a href={`https://wa.me/${waNumber(s.customer_phone)}`} target="_blank" rel="noreferrer" className="text-[#1E8A2C] hover:underline">{formatDisplay(s.customer_phone)}</a>
                       : "—"}
                   </td>
                   <td className="px-4 py-3 text-[#152B14]">{s.plan_name}</td>

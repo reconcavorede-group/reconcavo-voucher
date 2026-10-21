@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAdminLocation } from "@/lib/adminLocation";
 import { PhoneField } from "@/components/PhoneField";
-import { waNumber } from "@/lib/phone";
+import { waNumber, formatDisplay } from "@/lib/phone";
 
 interface AppUser {
   user_id: string;
@@ -197,7 +197,7 @@ function UserRow({ user, locations, onChanged }: { user: AppUser; locations: { i
           </div>
           <div className="mt-0.5 pl-6 text-xs text-[#6E9070]">
             {user.email}
-            {user.phone ? <> · <a href={`https://wa.me/${waNumber(user.phone)}`} target="_blank" rel="noreferrer" className="text-[#1E8A2C] hover:underline">{user.phone}</a></> : ""}
+            {user.phone ? <> · <a href={`https://wa.me/${waNumber(user.phone)}`} target="_blank" rel="noreferrer" className="text-[#1E8A2C] hover:underline">{formatDisplay(user.phone)}</a></> : ""}
           </div>
         </div>
         <div className="flex items-center gap-2">
