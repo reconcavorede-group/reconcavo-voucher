@@ -248,21 +248,13 @@ export default function OrderStatus() {
                 </button>
               </div>
 
-              {/* Troca o trial pelo voucher num toque. Copia o código (rede de
-                  proteção: se o auto-login falhar, o cliente cola no portal) e
-                  navega pro /status#rvconnect=... — o hash sobrevive ao MikroTik. */}
-              <button
-                onClick={() => {
-                  try { navigator.clipboard.writeText(voucher.code); } catch { /* ignora */ }
-                  const back = typeof window !== "undefined" ? window.location.href : undefined;
-                  window.location.href = buildConnectUrl(voucher.code, gateway, back);
-                }}
-                className="flex min-h-[52px] w-full items-center justify-center gap-2 rounded-xl bg-[#B4F04B] px-4 font-bold text-[#152B14] transition hover:brightness-[1.06] active:scale-[0.98]">
-                <ExternalLink className="h-4 w-4" /> Conectar agora (um clique)
-              </button>
+              {/* Auto-conecta: assim que o pagamento é confirmado e a tela está
+                  aberta, dispara a conexão sozinho (contagem + Cancelar). Mantém
+                  o botão manual e a trava anti-loop. */}
+              <AutoConnect code={voucher.code} gateway={gateway} />
 
               <div className="rounded-2xl bg-[#E9F4E5] p-4 text-sm text-[#49784C]">
-                Conecte-se à rede Wi-Fi <strong className="text-[#135B1D]">Recôncavo Voucher</strong> e toque no botão acima. O código já fica copiado — se a tela de login aparecer, é só colar e tocar em Conectar.
+                Conecte-se à rede Wi-Fi <strong className="text-[#135B1D]">Recôncavo Voucher</strong> e a conexão acontece sozinha. O código já fica copiado — se a tela de login aparecer, é só colar e tocar em Conectar.
               </div>
 
               {voucher.expires_at && (
@@ -278,6 +270,58 @@ export default function OrderStatus() {
 
         <p className="mt-6 text-center text-xs text-[#6E9070]">Guarde o link desta página para acompanhar seu pedido.</p>
       </main>
+    </div>
+  );
+}
+
+// Auto-conexão: executada NO APARELHO do cliente (único lugar de onde o login
+// do hotspot vale). Ao montar com o pagamento confirmado, conta 5s e dispara a
+// conexão sozinho — a menos que o cliente cancele (caso esteja vendo a tela pela
+// rede móvel, não pelo Wi-Fi do ponto). Trava anti-loop em sessionStorage: se a
+// conexão falhar e o cliente voltar à página, não re-dispara automaticamente.
+function AutoConnect({ code, gateway }: { code: string; gateway?: string }) {
+  const SECS = 5;
+  const key = `rvac-${code}`;
+  const alreadyTried = (() => {
+    try { return sessionStorage.getItem(key) === "1"; } catch { return false; }
+  })();
+  const [left, setLeft] = useState<number | null>(alreadyTried ? null : SECS);
+  const [cancelled, setCancelled] = useState(alreadyTried);
+
+  const connect = () => {
+    try { navigator.clipboard.writeText(code); } catch { /* ignora */ }
+    try { sessionStorage.setItem(key, "1"); } catch { /* ignora */ }
+    const back = typeof window !== "undefined" ? window.location.href : undefined;
+    window.location.href = buildConnectUrl(code, gateway, back);
+  };
+
+  useEffect(() => {
+    if (cancelled || left === null) return;
+    if (left <= 0) { connect(); return; }
+    const t = setTimeout(() => setLeft((n) => (n ?? 1) - 1), 1000);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [left, cancelled]);
+
+  const counting = !cancelled && left !== null && left > 0;
+
+  return (
+    <div className="space-y-2">
+      <button
+        onClick={connect}
+        className="flex min-h-[52px] w-full items-center justify-center gap-2 rounded-xl bg-[#B4F04B] px-4 font-bold text-[#152B14] transition hover:brightness-[1.06] active:scale-[0.98]">
+        <ExternalLink className="h-4 w-4" />
+        {counting ? `Conectando em ${left}…` : "Conectar agora (um clique)"}
+      </button>
+      {counting && (
+        <p className="text-center text-xs text-[#6E9070]">
+          Conectando automaticamente ·{" "}
+          <button onClick={() => { setCancelled(true); setLeft(null); }}
+            className="font-semibold text-[#1E8A2C] underline underline-offset-2">
+            Cancelar
+          </button>
+        </p>
+      )}
     </div>
   );
 }
