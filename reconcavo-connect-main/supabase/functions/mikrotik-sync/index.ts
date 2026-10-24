@@ -29,12 +29,23 @@ function mkTime(min: number): string {
 // relatório). comment="rvr2" é o marcador de versão (o guard no bootstrap evita
 // reaplicar a cada sync). on-event idêntico ao rv-report-scheduler-*.rsc (coleta
 // clientes + total + cpu + temperatura robusta v6/v7).
-// on-event ORIGINAL comprovado (clientes + total + cpu, SEM temperatura). O bloco
-// de temperatura abortava o on-event em produção (offline em todos os pontos,
-// 2026-10-24) — removido. remove+add com esta string provada restaura o serviço.
-// Marcador rvr3 força o re-pull nos pontos que já pegaram a rvr2 quebrada.
+// Scheduler rv-report servido pela via protegida (f=report), RAMIFICADO por ponto:
+// - v7 (Principal/Cachoeira/Feira): inclui temperatura (forma B validada em
+//   roteador real: [/system health get [find name=temperature] value]). A leitura
+//   é ISOLADA num :do on-error, SEM a forma A (que é SYNTAX ERROR no v7 e não é
+//   pega por on-error → derrubava o on-event) e SEM comparações (type-error também
+//   estourava). Marcador rvr4.
+// - Santo Amaro (v6.49, area-dos-bancos): SEM temperatura (a sintaxe do /system
+//   health no v6 ainda não foi validada; forma B pode dar syntax error e quebrar).
+//   Marcador rvr3 (= versão atual dele → o guard não re-puxa, fica intocado).
+// Usa remove+add com a string provada. ISSO_MESMO padrão serve pra evoluir depois.
 function reportRsc(loja: string, secret: string): string {
   const base = "https://yzowyjaqwhjufdxiiujz.supabase.co/functions/v1/mikrotik-report";
+  const v6 = loja === "area-dos-bancos"; // Santo Amaro: sem temperatura por enquanto
+  const tempRead = v6 ? "" :
+    `:local tmp \\"\\"; :do {:set tmp [/system health get [find name=temperature] value]} on-error={}; `;
+  const tempUrl = v6 ? "" : ` . \\"&temp=\\" . \\$tmp`;
+  const marker = v6 ? "rvr3" : "rvr4";
   const oe =
     `:do {:local body \\"\\"; :foreach i in=[/ip hotspot active find] do={` +
     `:local u [/ip hotspot active get \\$i user]; :local ip [/ip hotspot active get \\$i address]; ` +
@@ -42,10 +53,11 @@ function reportRsc(loja: string, secret: string): string {
     `:local lft \\"\\"; :do {:set lft [/ip hotspot active get \\$i session-time-left]} on-error={}; ` +
     `:set body (\\$body . \\$u . \\"|\\" . \\$ip . \\"|\\" . \\$mac . \\"|\\" . \\$up . \\"|\\" . \\$lft . \\";\\")}; ` +
     `:local total [/ip hotspot user print count-only where name~\\"^REC-\\"]; ` +
-    `/tool fetch url=(\\"${base}?loja=${loja}&k=${secret}&total=\\" . \\$total . \\"&cpu=\\" . [/system resource get cpu-load]) http-method=post http-data=\\$body mode=https check-certificate=no output=none} on-error={}`;
+    tempRead +
+    `/tool fetch url=(\\"${base}?loja=${loja}&k=${secret}&total=\\" . \\$total . \\"&cpu=\\" . [/system resource get cpu-load]${tempUrl}) http-method=post http-data=\\$body mode=https check-certificate=no output=none} on-error={}`;
   return (
     `/system scheduler remove [find where name="rv-report"]\n` +
-    `/system scheduler add name=rv-report interval=10s start-time=startup comment="rvr3" on-event="${oe}"\n`
+    `/system scheduler add name=rv-report interval=10s start-time=startup comment="${marker}" on-event="${oe}"\n`
   );
 }
 
@@ -138,8 +150,9 @@ Deno.serve(async (req) => {
     // versão "rvr2" (sem o marcador no comment), baixa o rv-report.rsc pela via
     // protegida e importa — uma vez só. Como o import usa `set`, se algo falhar o
     // scheduler atual permanece. Resolve pontos remotos (Feira) sem Winbox.
+    const reportMarker = loja === "area-dos-bancos" ? "rvr3" : "rvr4";
     const reportBoot =
-      `:do {:if ([:len [/system scheduler find where name="rv-report" comment="rvr3"]]=0) do={` +
+      `:do {:if ([:len [/system scheduler find where name="rv-report" comment="${reportMarker}"]]=0) do={` +
       `/tool fetch url="https://yzowyjaqwhjufdxiiujz.supabase.co/functions/v1/mikrotik-sync?loja=${loja}&k=${secret}&f=report" mode=https check-certificate=no dst-path=rv-report.rsc; ` +
       `/import file-name=rv-report.rsc}} on-error={}`;
 
