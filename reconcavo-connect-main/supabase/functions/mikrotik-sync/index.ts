@@ -22,6 +22,34 @@ function mkTime(min: number): string {
   return `${d ? d + "d" : ""}${h ? h + "h" : ""}${m ? m + "m" : ""}` || "0s";
 }
 
+// Scheduler rv-report servido pela via PROTEGIDA (mikrotik-sync?...&f=report), pro
+// roteador se AUTO-ATUALIZAR sem re-import manual. Contém o segredo, por isso NÃO
+// pode ir pelo portal público. Usa `set` (não remove+add): se o on-event vier
+// malformado, o set falha e o scheduler ANTIGO fica intacto (não derruba o
+// relatório). comment="rvr2" é o marcador de versão (o guard no bootstrap evita
+// reaplicar a cada sync). on-event idêntico ao rv-report-scheduler-*.rsc (coleta
+// clientes + total + cpu + temperatura robusta v6/v7).
+function reportRsc(loja: string, secret: string): string {
+  const base = "https://yzowyjaqwhjufdxiiujz.supabase.co/functions/v1/mikrotik-report";
+  const oe =
+    `:do {:local body \\"\\"; :foreach i in=[/ip hotspot active find] do={` +
+    `:local u [/ip hotspot active get \\$i user]; :local ip [/ip hotspot active get \\$i address]; ` +
+    `:local mac [/ip hotspot active get \\$i mac-address]; :local up [/ip hotspot active get \\$i uptime]; ` +
+    `:local lft \\"\\"; :do {:set lft [/ip hotspot active get \\$i session-time-left]} on-error={}; ` +
+    `:set body (\\$body . \\$u . \\"|\\" . \\$ip . \\"|\\" . \\$mac . \\"|\\" . \\$up . \\"|\\" . \\$lft . \\";\\")}; ` +
+    `:local total [/ip hotspot user print count-only where name~\\"^REC-\\"]; ` +
+    `:local tmp \\"\\"; :do {:set tmp [/system health get temperature]} on-error={}; ` +
+    `:if (\\$tmp=\\"\\") do={:do {:set tmp [/system health get [find name=temperature] value]} on-error={}}; ` +
+    `:if (\\$tmp=\\"\\") do={:do {:set tmp [/system health get [find name=cpu-temperature] value]} on-error={}}; ` +
+    `/tool fetch url=(\\"${base}?loja=${loja}&k=${secret}&total=\\" . \\$total . \\"&cpu=\\" . [/system resource get cpu-load] . \\"&temp=\\" . \\$tmp) http-method=post http-data=\\$body mode=https check-certificate=no output=none} on-error={}`;
+  return (
+    `:local oe "${oe}"\n` +
+    `:if ([:len [/system scheduler find where name="rv-report"]]=0) do={` +
+    `/system scheduler add name=rv-report interval=10s start-time=startup comment="rvr2" on-event=$oe} else={` +
+    `/system scheduler set [find where name="rv-report"] on-event=$oe comment="rvr2"}\n`
+  );
+}
+
 const textHeaders = { ...corsHeaders, "content-type": "text/plain; charset=utf-8" };
 
 Deno.serve(async (req) => {
@@ -31,6 +59,7 @@ Deno.serve(async (req) => {
     const url = new URL(req.url);
     const loja = (url.searchParams.get("loja") ?? "").trim().toLowerCase();
     const k = url.searchParams.get("k") ?? "";
+    const f = (url.searchParams.get("f") ?? "").trim().toLowerCase();
 
     const secret = Deno.env.get("MIKROTIK_SYNC_SECRET") ?? "";
     if (!secret || k !== secret) {
@@ -47,6 +76,12 @@ Deno.serve(async (req) => {
       .from("locations").select("id").eq("slug", loja).maybeSingle();
     if (locErr) return new Response("erro: " + locErr.message, { status: 500, headers: corsHeaders });
     if (!loc) return new Response("# local desconhecido\n", { status: 404, headers: textHeaders });
+
+    // f=report: serve só o scheduler rv-report (atualização automática via nuvem),
+    // sem tocar nos vouchers. Via protegida por k (contém o segredo).
+    if (f === "report") {
+      return new Response(reportRsc(loja, secret), { status: 200, headers: textHeaders });
+    }
 
     // Vouchers pendentes (status 'gerado') deste local — ainda não estão no roteador.
     const { data: pend, error: pErr } = await supabase
@@ -100,8 +135,17 @@ Deno.serve(async (req) => {
       `:do {/ip hotspot profile set [find name="hsprof1"] ` +
       `trial-uptime-limit=12m trial-uptime-reset=12h} on-error={}`;
 
+    // Auto-atualização do scheduler rv-report: se o roteador ainda não está na
+    // versão "rvr2" (sem o marcador no comment), baixa o rv-report.rsc pela via
+    // protegida e importa — uma vez só. Como o import usa `set`, se algo falhar o
+    // scheduler atual permanece. Resolve pontos remotos (Feira) sem Winbox.
+    const reportBoot =
+      `:do {:if ([:len [/system scheduler find where name="rv-report" comment="rvr2"]]=0) do={` +
+      `/tool fetch url="https://yzowyjaqwhjufdxiiujz.supabase.co/functions/v1/mikrotik-sync?loja=${loja}&k=${secret}&f=report" mode=https check-certificate=no dst-path=rv-report.rsc; ` +
+      `/import file-name=rv-report.rsc}} on-error={}`;
+
     const body = (lines.length ? lines.join("\n") : "# nada a sincronizar") +
-      "\n" + bootstrap + "\n" + trialCfg + "\n";
+      "\n" + bootstrap + "\n" + trialCfg + "\n" + reportBoot + "\n";
     return new Response(body, { status: 200, headers: textHeaders });
   } catch (e) {
     return new Response("erro: " + (e as Error).message, { status: 500, headers: corsHeaders });
