@@ -41,11 +41,14 @@ function mkTime(min: number): string {
 // Usa remove+add com a string provada. ISSO_MESMO padrão serve pra evoluir depois.
 function reportRsc(loja: string, secret: string): string {
   const base = "https://yzowyjaqwhjufdxiiujz.supabase.co/functions/v1/mikrotik-report";
-  const v6 = loja === "area-dos-bancos"; // Santo Amaro: sem temperatura por enquanto
+  const v6 = loja === "area-dos-bancos"; // Santo Amaro: sem temp/tensão por enquanto
+  // v7: temperatura E tensão da fonte, pela forma B validada ([find name=X] value),
+  // cada leitura isolada em :do on-error (nada estoura pro on-event). v6 fica sem.
   const tempRead = v6 ? "" :
-    `:local tmp \\"\\"; :do {:set tmp [/system health get [find name=temperature] value]} on-error={}; `;
-  const tempUrl = v6 ? "" : ` . \\"&temp=\\" . \\$tmp`;
-  const marker = v6 ? "rvr3" : "rvr4";
+    `:local tmp \\"\\"; :do {:set tmp [/system health get [find name=temperature] value]} on-error={}; ` +
+    `:local volt \\"\\"; :do {:set volt [/system health get [find name=voltage] value]} on-error={}; `;
+  const tempUrl = v6 ? "" : ` . \\"&temp=\\" . \\$tmp . \\"&volt=\\" . \\$volt`;
+  const marker = v6 ? "rvr3" : "rvr5";
   const oe =
     `:do {:local body \\"\\"; :foreach i in=[/ip hotspot active find] do={` +
     `:local u [/ip hotspot active get \\$i user]; :local ip [/ip hotspot active get \\$i address]; ` +
@@ -150,7 +153,7 @@ Deno.serve(async (req) => {
     // versão "rvr2" (sem o marcador no comment), baixa o rv-report.rsc pela via
     // protegida e importa — uma vez só. Como o import usa `set`, se algo falhar o
     // scheduler atual permanece. Resolve pontos remotos (Feira) sem Winbox.
-    const reportMarker = loja === "area-dos-bancos" ? "rvr3" : "rvr4";
+    const reportMarker = loja === "area-dos-bancos" ? "rvr3" : "rvr5";
     const reportBoot =
       `:do {:if ([:len [/system scheduler find where name="rv-report" comment="${reportMarker}"]]=0) do={` +
       `/tool fetch url="https://yzowyjaqwhjufdxiiujz.supabase.co/functions/v1/mikrotik-sync?loja=${loja}&k=${secret}&f=report" mode=https check-certificate=no dst-path=rv-report.rsc; ` +

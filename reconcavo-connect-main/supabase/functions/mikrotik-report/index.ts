@@ -21,6 +21,7 @@ Deno.serve(async (req) => {
     const totalRaw = url.searchParams.get("total") ?? "";
     const cpuRaw = url.searchParams.get("cpu") ?? "";
     const tempRaw = url.searchParams.get("temp") ?? "";
+    const voltRaw = url.searchParams.get("volt") ?? "";
 
     const secret = Deno.env.get("MIKROTIK_SYNC_SECRET") ?? "";
     if (!secret || k !== secret) {
@@ -92,6 +93,15 @@ Deno.serve(async (req) => {
     if (Number.isFinite(temp)) {
       await supabase.from("mikrotik_status")
         .update({ temperature: temp }).eq("location_id", loc.id)
+        .then(() => {}, () => {});
+    }
+
+    // tensão da fonte (V) — decimal, UPDATE separado e tolerante (coluna ausente
+    // ou valor vazio não quebram o relatório).
+    const volt = parseFloat(voltRaw);
+    if (Number.isFinite(volt)) {
+      await supabase.from("mikrotik_status")
+        .update({ voltage: volt }).eq("location_id", loc.id)
         .then(() => {}, () => {});
     }
 
