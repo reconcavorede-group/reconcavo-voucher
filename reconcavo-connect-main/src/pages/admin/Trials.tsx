@@ -16,6 +16,9 @@ interface Agg {
   bought: boolean;
 }
 
+// Só os dígitos do telefone (ignora +, espaços, traços) p/ casar trial_identity x payments.
+const digitsOnly = (p?: string | null): string => (p ?? "").replace(/\D/g, "");
+
 function fmtDateTime(iso: string): string {
   try {
     return new Date(iso).toLocaleString("pt-BR", {
@@ -44,7 +47,8 @@ export default function Trials() {
 
     const macs = [...new Set(list.map((l) => l.mac))].filter(Boolean);
     const ident = new Map<string, Ident>();
-    const bought = new Set<string>();
+    const bought = new Set<string>();        // MACs que USARAM um voucher (mac_address)
+    const boughtPhones = new Set<string>();  // telefones de quem PAGOU (pagamento concluído)
     if (macs.length) {
       // Nome/telefone (gravados quando o trial foi liberado, via trial_identity).
       const { data: ti } = await supabase
@@ -52,14 +56,31 @@ export default function Trials() {
       for (const r of (ti ?? []) as Array<{ mac: string; name: string | null; phone: string | null }>)
         ident.set((r.mac || "").toUpperCase(), { name: r.name, phone: r.phone });
 
-      // "Já comprou?": existe algum voucher vinculado a esse MAC (qualquer ponto).
+      // Sinal de USO: existe voucher com esse MAC (preenchido só no login do hotspot).
       // Testa maiúsc. e minúsc. porque o roteador pode gravar em qualquer caixa.
       const lower = macs.map((m) => m.toLowerCase());
       const { data: vs } = await supabase
         .from("vouchers").select("mac_address").in("mac_address", [...macs, ...lower]);
       for (const v of (vs ?? []) as Array<{ mac_address: string | null }>)
         if (v.mac_address) bought.add(v.mac_address.toUpperCase());
+
+      // Sinal de COMPRA (o que importa pra "Comprou?"): telefone do aparelho
+      // (trial_identity) que bate com um PAGAMENTO CONCLUÍDO deste ponto. Pega quem
+      // pagou MAS não usou o voucher (mac_address fica NULL nesse caso).
+      const { data: pays } = await supabase
+        .from("payments").select("customer_phone")
+        .eq("location_id", locationId).eq("status", "completed").limit(1000);
+      for (const p of (pays ?? []) as Array<{ customer_phone: string | null }>) {
+        const d = digitsOnly(p.customer_phone);
+        if (d.length >= 8) boughtPhones.add(d);
+      }
     }
+    // Comprou = usou um voucher OU o telefone bate com um pagamento concluído.
+    const didBuy = (mac: string): boolean => {
+      if (bought.has(mac)) return true;
+      const d = digitsOnly(ident.get(mac)?.phone);
+      return d.length >= 8 && boughtPhones.has(d);
+    };
 
     // Agrega por aparelho (MAC). list está em ordem decrescente de data.
     const byMac = new Map<string, Agg>();
@@ -69,7 +90,7 @@ export default function Trials() {
       else {
         const id = ident.get(l.mac) ?? { name: null, phone: null };
         byMac.set(l.mac, { mac: l.mac, count: 1, first: l.started_at, last: l.started_at,
-          name: id.name, phone: id.phone, bought: bought.has(l.mac) });
+          name: id.name, phone: id.phone, bought: didBuy(l.mac) });
       }
     }
     const agg = [...byMac.values()].sort((a, b) => {
@@ -83,7 +104,7 @@ export default function Trials() {
 
     setRecent(list.slice(0, 60).map((l) => {
       const id = ident.get(l.mac) ?? { name: null, phone: null };
-      return { ...l, name: id.name, phone: id.phone, bought: bought.has(l.mac) };
+      return { ...l, name: id.name, phone: id.phone, bought: didBuy(l.mac) };
     }));
     setLoading(false);
   };
