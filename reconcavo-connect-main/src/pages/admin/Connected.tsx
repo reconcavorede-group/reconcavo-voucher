@@ -5,7 +5,7 @@ import { useAdminLocation } from "@/lib/adminLocation";
 import { waNumber, formatDisplay } from "@/lib/phone";
 
 interface Client { code: string; ip: string; mac: string; uptime: string; left: string }
-interface Status { location_id: string; active_clients: Client[]; user_count: number | null; last_report_at: string | null; cpu_load: number | null }
+interface Status { location_id: string; active_clients: Client[]; user_count: number | null; last_report_at: string | null; cpu_load: number | null; temperature: number | null }
 
 // Saúde do relatório (rv-report roda a cada 10s): verde ≤40s, âmbar ≤90s,
 // vermelho acima; cinza = nunca reportou (rv-report não instalado / roteador novo).
@@ -48,7 +48,7 @@ export default function Connected() {
   const load = async () => {
     const { data } = await supabase
       .from("mikrotik_status")
-      .select("location_id, active_clients, user_count, last_report_at, cpu_load");
+      .select("location_id, active_clients, user_count, last_report_at, cpu_load, temperature");
     const m = new Map<string, Status>();
     const codes = new Set<string>();      // vouchers REC- conectados
     const trialMacs = new Set<string>();  // MACs de clientes em trial (T-)
@@ -147,6 +147,11 @@ export default function Connected() {
         const cpu = h.tone === "bad" || h.tone === "none" ? null : st?.cpu_load;
         const cpuTone: Tone = cpu == null ? "none" : cpu < 60 ? "ok" : cpu < 85 ? "warn" : "bad";
         const ct = TONE[cpuTone];
+        // Temperatura (°C) — só quando o relatório está fresco (senão o valor é
+        // antigo). Verde <55, âmbar <70, vermelho acima. Null = sem sensor/dado.
+        const temp = h.tone === "bad" || h.tone === "none" ? null : st?.temperature;
+        const tempTone: Tone = temp == null ? "none" : temp < 55 ? "ok" : temp < 70 ? "warn" : "bad";
+        const tt = TONE[tempTone];
         return (
           <div key={loc.id} className="rounded-[20px] border-2 border-[#D8E9D3] bg-white p-5">
             <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
@@ -163,6 +168,12 @@ export default function Connected() {
                   <span className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-semibold"
                     style={{ background: ct.bg, color: ct.text }} title="Uso de CPU do roteador neste local">
                     <span className="h-2 w-2 rounded-full" style={{ background: ct.dot }} /> CPU {cpu}%
+                  </span>
+                )}
+                {temp != null && (
+                  <span className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-semibold"
+                    style={{ background: tt.bg, color: tt.text }} title="Temperatura do roteador neste local">
+                    <span className="h-2 w-2 rounded-full" style={{ background: tt.dot }} /> {temp}°C
                   </span>
                 )}
                 <span className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-semibold"

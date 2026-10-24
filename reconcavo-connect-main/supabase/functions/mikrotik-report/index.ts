@@ -20,6 +20,7 @@ Deno.serve(async (req) => {
     const k = url.searchParams.get("k") ?? "";
     const totalRaw = url.searchParams.get("total") ?? "";
     const cpuRaw = url.searchParams.get("cpu") ?? "";
+    const tempRaw = url.searchParams.get("temp") ?? "";
 
     const secret = Deno.env.get("MIKROTIK_SYNC_SECRET") ?? "";
     if (!secret || k !== secret) {
@@ -82,6 +83,15 @@ Deno.serve(async (req) => {
     if (Number.isFinite(cpu)) {
       await supabase.from("mikrotik_status")
         .update({ cpu_load: cpu }).eq("location_id", loc.id)
+        .then(() => {}, () => {});
+    }
+
+    // temperatura do roteador, UPDATE separado e tolerante (se a coluna ainda
+    // não existir, ou se o modelo não tiver sensor e vier vazio, não quebra).
+    const temp = parseInt(tempRaw, 10);
+    if (Number.isFinite(temp)) {
+      await supabase.from("mikrotik_status")
+        .update({ temperature: temp }).eq("location_id", loc.id)
         .then(() => {}, () => {});
     }
 
