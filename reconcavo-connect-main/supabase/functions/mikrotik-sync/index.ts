@@ -29,6 +29,10 @@ function mkTime(min: number): string {
 // relatório). comment="rvr2" é o marcador de versão (o guard no bootstrap evita
 // reaplicar a cada sync). on-event idêntico ao rv-report-scheduler-*.rsc (coleta
 // clientes + total + cpu + temperatura robusta v6/v7).
+// on-event ORIGINAL comprovado (clientes + total + cpu, SEM temperatura). O bloco
+// de temperatura abortava o on-event em produção (offline em todos os pontos,
+// 2026-10-24) — removido. remove+add com esta string provada restaura o serviço.
+// Marcador rvr3 força o re-pull nos pontos que já pegaram a rvr2 quebrada.
 function reportRsc(loja: string, secret: string): string {
   const base = "https://yzowyjaqwhjufdxiiujz.supabase.co/functions/v1/mikrotik-report";
   const oe =
@@ -38,15 +42,10 @@ function reportRsc(loja: string, secret: string): string {
     `:local lft \\"\\"; :do {:set lft [/ip hotspot active get \\$i session-time-left]} on-error={}; ` +
     `:set body (\\$body . \\$u . \\"|\\" . \\$ip . \\"|\\" . \\$mac . \\"|\\" . \\$up . \\"|\\" . \\$lft . \\";\\")}; ` +
     `:local total [/ip hotspot user print count-only where name~\\"^REC-\\"]; ` +
-    `:local tmp \\"\\"; :do {:set tmp [/system health get temperature]} on-error={}; ` +
-    `:if (\\$tmp=\\"\\") do={:do {:set tmp [/system health get [find name=temperature] value]} on-error={}}; ` +
-    `:if (\\$tmp=\\"\\") do={:do {:set tmp [/system health get [find name=cpu-temperature] value]} on-error={}}; ` +
-    `/tool fetch url=(\\"${base}?loja=${loja}&k=${secret}&total=\\" . \\$total . \\"&cpu=\\" . [/system resource get cpu-load] . \\"&temp=\\" . \\$tmp) http-method=post http-data=\\$body mode=https check-certificate=no output=none} on-error={}`;
+    `/tool fetch url=(\\"${base}?loja=${loja}&k=${secret}&total=\\" . \\$total . \\"&cpu=\\" . [/system resource get cpu-load]) http-method=post http-data=\\$body mode=https check-certificate=no output=none} on-error={}`;
   return (
-    `:local oe "${oe}"\n` +
-    `:if ([:len [/system scheduler find where name="rv-report"]]=0) do={` +
-    `/system scheduler add name=rv-report interval=10s start-time=startup comment="rvr2" on-event=$oe} else={` +
-    `/system scheduler set [find where name="rv-report"] on-event=$oe comment="rvr2"}\n`
+    `/system scheduler remove [find where name="rv-report"]\n` +
+    `/system scheduler add name=rv-report interval=10s start-time=startup comment="rvr3" on-event="${oe}"\n`
   );
 }
 
@@ -140,7 +139,7 @@ Deno.serve(async (req) => {
     // protegida e importa — uma vez só. Como o import usa `set`, se algo falhar o
     // scheduler atual permanece. Resolve pontos remotos (Feira) sem Winbox.
     const reportBoot =
-      `:do {:if ([:len [/system scheduler find where name="rv-report" comment="rvr2"]]=0) do={` +
+      `:do {:if ([:len [/system scheduler find where name="rv-report" comment="rvr3"]]=0) do={` +
       `/tool fetch url="https://yzowyjaqwhjufdxiiujz.supabase.co/functions/v1/mikrotik-sync?loja=${loja}&k=${secret}&f=report" mode=https check-certificate=no dst-path=rv-report.rsc; ` +
       `/import file-name=rv-report.rsc}} on-error={}`;
 
