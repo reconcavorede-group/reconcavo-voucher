@@ -41,14 +41,20 @@ function mkTime(min: number): string {
 // Usa remove+add com a string provada. ISSO_MESMO padrão serve pra evoluir depois.
 function reportRsc(loja: string, secret: string): string {
   const base = "https://yzowyjaqwhjufdxiiujz.supabase.co/functions/v1/mikrotik-report";
-  const v6 = loja === "area-dos-bancos"; // Santo Amaro: sem temp/tensão por enquanto
-  // v7: temperatura E tensão da fonte, pela forma B validada ([find name=X] value),
-  // cada leitura isolada em :do on-error (nada estoura pro on-event). v6 fica sem.
-  const tempRead = v6 ? "" :
-    `:local tmp \\"\\"; :do {:set tmp [/system health get [find name=temperature] value]} on-error={}; ` +
-    `:local volt \\"\\"; :do {:set volt [/system health get [find name=voltage] value]} on-error={}; `;
-  const tempUrl = v6 ? "" : ` . \\"&temp=\\" . \\$tmp . \\"&volt=\\" . \\$volt`;
-  const marker = v6 ? "rvr3" : "rvr5";
+  const v6 = loja === "area-dos-bancos"; // Santo Amaro v6.49
+  // v7: temperatura E tensão pela forma B direta ([find name=X] value), validada em
+  //     roteador real; cada leitura isolada em :do on-error.
+  // v6: SÓ a tensão, lida via :parse (compila em RUNTIME). Se a sintaxe do /system
+  //     health do v6 não bater, o :parse falha e é pego por on-error → NÃO derruba o
+  //     on-event nem tira o ponto do ar; no pior caso só não vem a tensão.
+  const reads = v6
+    ? `:local volt \\"\\"; :do {:set volt ([[:parse \\":return [/system health get [find name=voltage] value]\\"]] . \\"\\")} on-error={}; `
+    : `:local tmp \\"\\"; :do {:set tmp [/system health get [find name=temperature] value]} on-error={}; ` +
+      `:local volt \\"\\"; :do {:set volt [/system health get [find name=voltage] value]} on-error={}; `;
+  const readsUrl = v6
+    ? ` . \\"&volt=\\" . \\$volt`
+    : ` . \\"&temp=\\" . \\$tmp . \\"&volt=\\" . \\$volt`;
+  const marker = v6 ? "sav1" : "rvr5";
   const oe =
     `:do {:local body \\"\\"; :foreach i in=[/ip hotspot active find] do={` +
     `:local u [/ip hotspot active get \\$i user]; :local ip [/ip hotspot active get \\$i address]; ` +
@@ -56,8 +62,8 @@ function reportRsc(loja: string, secret: string): string {
     `:local lft \\"\\"; :do {:set lft [/ip hotspot active get \\$i session-time-left]} on-error={}; ` +
     `:set body (\\$body . \\$u . \\"|\\" . \\$ip . \\"|\\" . \\$mac . \\"|\\" . \\$up . \\"|\\" . \\$lft . \\";\\")}; ` +
     `:local total [/ip hotspot user print count-only where name~\\"^REC-\\"]; ` +
-    tempRead +
-    `/tool fetch url=(\\"${base}?loja=${loja}&k=${secret}&total=\\" . \\$total . \\"&cpu=\\" . [/system resource get cpu-load]${tempUrl}) http-method=post http-data=\\$body mode=https check-certificate=no output=none} on-error={}`;
+    reads +
+    `/tool fetch url=(\\"${base}?loja=${loja}&k=${secret}&total=\\" . \\$total . \\"&cpu=\\" . [/system resource get cpu-load]${readsUrl}) http-method=post http-data=\\$body mode=https check-certificate=no output=none} on-error={}`;
   return (
     `/system scheduler remove [find where name="rv-report"]\n` +
     `/system scheduler add name=rv-report interval=10s start-time=startup comment="${marker}" on-event="${oe}"\n`
@@ -153,7 +159,7 @@ Deno.serve(async (req) => {
     // versão "rvr2" (sem o marcador no comment), baixa o rv-report.rsc pela via
     // protegida e importa — uma vez só. Como o import usa `set`, se algo falhar o
     // scheduler atual permanece. Resolve pontos remotos (Feira) sem Winbox.
-    const reportMarker = loja === "area-dos-bancos" ? "rvr3" : "rvr5";
+    const reportMarker = loja === "area-dos-bancos" ? "sav1" : "rvr5";
     const reportBoot =
       `:do {:if ([:len [/system scheduler find where name="rv-report" comment="${reportMarker}"]]=0) do={` +
       `/tool fetch url="https://yzowyjaqwhjufdxiiujz.supabase.co/functions/v1/mikrotik-sync?loja=${loja}&k=${secret}&f=report" mode=https check-certificate=no dst-path=rv-report.rsc; ` +
