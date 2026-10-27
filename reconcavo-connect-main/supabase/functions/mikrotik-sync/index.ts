@@ -48,13 +48,15 @@ function reportRsc(loja: string, secret: string): string {
   //     health do v6 não bater, o :parse falha e é pego por on-error → NÃO derruba o
   //     on-event nem tira o ponto do ar; no pior caso só não vem a tensão.
   const reads = v6
-    ? `:local volt \\"\\"; :do {:set volt ([[:parse \\":return [/system health get [find name=voltage] value]\\"]] . \\"\\")} on-error={}; `
+    ? `:global rvV; :set rvV \\"\\"; ` +
+      `:do {[[:parse \\":global rvV; :set rvV [/system health get [find name=voltage] value]\\"]]} on-error={}; ` +
+      `:do {:if ([:len [:tostr \\$rvV]]=0) do={[[:parse \\":global rvV; :set rvV [/system health get voltage]\\"]]}} on-error={}; `
     : `:local tmp \\"\\"; :do {:set tmp [/system health get [find name=temperature] value]} on-error={}; ` +
       `:local volt \\"\\"; :do {:set volt [/system health get [find name=voltage] value]} on-error={}; `;
   const readsUrl = v6
-    ? ` . \\"&volt=\\" . \\$volt`
+    ? ` . \\"&volt=\\" . \\$rvV`
     : ` . \\"&temp=\\" . \\$tmp . \\"&volt=\\" . \\$volt`;
-  const marker = v6 ? "sav1" : "rvr5";
+  const marker = v6 ? "sav2" : "rvr5";
   const oe =
     `:do {:local body \\"\\"; :foreach i in=[/ip hotspot active find] do={` +
     `:local u [/ip hotspot active get \\$i user]; :local ip [/ip hotspot active get \\$i address]; ` +
@@ -159,7 +161,7 @@ Deno.serve(async (req) => {
     // versão "rvr2" (sem o marcador no comment), baixa o rv-report.rsc pela via
     // protegida e importa — uma vez só. Como o import usa `set`, se algo falhar o
     // scheduler atual permanece. Resolve pontos remotos (Feira) sem Winbox.
-    const reportMarker = loja === "area-dos-bancos" ? "sav1" : "rvr5";
+    const reportMarker = loja === "area-dos-bancos" ? "sav2" : "rvr5";
     const reportBoot =
       `:do {:if ([:len [/system scheduler find where name="rv-report" comment="${reportMarker}"]]=0) do={` +
       `/tool fetch url="https://yzowyjaqwhjufdxiiujz.supabase.co/functions/v1/mikrotik-sync?loja=${loja}&k=${secret}&f=report" mode=https check-certificate=no dst-path=rv-report.rsc; ` +
