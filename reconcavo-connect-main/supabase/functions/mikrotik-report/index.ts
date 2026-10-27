@@ -89,8 +89,12 @@ Deno.serve(async (req) => {
 
     // temperatura do roteador, UPDATE separado e tolerante (se a coluna ainda
     // não existir, ou se o modelo não tiver sensor e vier vazio, não quebra).
-    const temp = parseInt(tempRaw, 10);
+    // temperatura (°C). Alguns v6 reportam em DÉCIMOS (ex.: 350 = 35°C); como °C
+    // real de roteador fica ~20–80, um valor >=100 só pode ser décimos → /10.
+    let temp = parseFloat(tempRaw);
     if (Number.isFinite(temp)) {
+      if (temp >= 100) temp = temp / 10;
+      temp = Math.round(temp);
       await supabase.from("mikrotik_status")
         .update({ temperature: temp }).eq("location_id", loc.id)
         .then(() => {}, () => {});
