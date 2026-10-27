@@ -97,9 +97,13 @@ Deno.serve(async (req) => {
     }
 
     // tensão da fonte (V) — decimal, UPDATE separado e tolerante (coluna ausente
-    // ou valor vazio não quebram o relatório).
-    const volt = parseFloat(voltRaw);
+    // ou valor vazio não quebram o relatório). Alguns modelos (v6) reportam em
+    // DÉCIMOS de volt (ex.: 119 = 11,9V); como a tensão real de entrada fica ~8–57V,
+    // um valor >=70 só pode ser décimos → divide por 10. Arredonda a 1 casa.
+    let volt = parseFloat(voltRaw);
     if (Number.isFinite(volt)) {
+      if (volt >= 70) volt = volt / 10;
+      volt = Math.round(volt * 10) / 10;
       await supabase.from("mikrotik_status")
         .update({ voltage: volt }).eq("location_id", loc.id)
         .then(() => {}, () => {});

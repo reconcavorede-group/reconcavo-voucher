@@ -183,7 +183,7 @@ export default function Connected() {
                 {volt != null && (
                   <span className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-semibold"
                     style={{ background: "#EAF0F7", color: "#2C4A6E" }} title="Tensão da fonte de energia do roteador neste local">
-                    <Zap className="h-3.5 w-3.5" /> {volt} V
+                    <Zap className="h-3.5 w-3.5" /> {String(volt).replace(".", ",")} V
                   </span>
                 )}
                 <span className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-semibold"
