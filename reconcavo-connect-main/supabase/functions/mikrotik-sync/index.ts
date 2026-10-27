@@ -108,33 +108,49 @@ Deno.serve(async (req) => {
       return new Response(reportRsc(loja, secret), { status: 200, headers: textHeaders });
     }
 
-    // Vouchers pendentes (status 'gerado') deste local — ainda não estão no roteador.
+    // A provisionar neste local: vouchers normais 'gerado' (vão virar 'disponivel')
+    // E dispositivos por MAC (is_device, ainda não sincronizados). Os de MAC já
+    // nascem 'active' (não entram no estoque vendável) — só precisam ir pro roteador.
     const { data: pend, error: pErr } = await supabase
       .from("vouchers")
-      .select("code, mikrotik_profile, duration_minutes")
+      .select("code, mikrotik_profile, duration_minutes, is_device")
       .eq("location_id", loc.id)
-      .eq("status", "gerado")
+      .or("status.eq.gerado,and(is_device.eq.true,router_synced_at.is.null)")
       .limit(1000);
     if (pErr) return new Response("erro: " + pErr.message, { status: 500, headers: corsHeaders });
 
     const rows = pend ?? [];
 
     // Linhas idempotentes: só adiciona quem ainda não existe no roteador.
+    // Dispositivo por MAC: senha VAZIA (casa com mac-auth-password do perfil, que
+    // fica vazio) → com login-by=mac o equipamento entra sozinho. Voucher normal:
+    // senha = o próprio código.
     const lines = rows.map((v) => {
       const prof = v.mikrotik_profile ? ` profile=${v.mikrotik_profile}` : "";
       const lim = v.duration_minutes ? ` limit-uptime=${mkTime(v.duration_minutes)}` : "";
-      return `:if ([:len [/ip hotspot user find name="${v.code}"]]=0) do={/ip hotspot user add name=${v.code} password=${v.code}${prof}${lim}}`;
+      const pw = v.is_device ? `""` : v.code;
+      return `:if ([:len [/ip hotspot user find name="${v.code}"]]=0) do={/ip hotspot user add name=${v.code} password=${pw}${prof}${lim}}`;
     });
 
-    // Marca os servidos como 'disponivel' (vendáveis) + carimba a sincronização.
-    // Só os que estavam 'gerado' deste local (guarda contra corrida).
+    // Marca os 'gerado' servidos como 'disponivel' (vendáveis) + carimba a sync.
+    // Dispositivos (is_device) NÃO viram 'disponivel' (ficam 'active'); só carimba
+    // router_synced_at pra não reaparecerem na próxima sincronização.
     if (rows.length) {
+      const nowIso = new Date().toISOString();
       const codes = rows.map((v) => v.code);
       await supabase.from("vouchers")
-        .update({ status: "disponivel", router_synced_at: new Date().toISOString() })
+        .update({ status: "disponivel", router_synced_at: nowIso })
         .in("code", codes)
         .eq("location_id", loc.id)
         .eq("status", "gerado");
+      const devCodes = rows.filter((v) => v.is_device).map((v) => v.code);
+      if (devCodes.length) {
+        await supabase.from("vouchers")
+          .update({ router_synced_at: nowIso })
+          .in("code", devCodes)
+          .eq("location_id", loc.id)
+          .eq("is_device", true);
+      }
     }
 
     // Carimba o último sync do local (pro painel).

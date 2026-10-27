@@ -20,6 +20,7 @@ interface Order {
   customer_name: string | null;
   customer_phone: string | null;
   voucher_id: string | null;
+  device_mac: string | null;
 }
 interface Voucher {
   code: string;
@@ -226,7 +227,38 @@ export default function OrderStatus() {
             </div>
           )}
 
-          {order.status === "completed" && voucher && (
+          {/* Compra de EQUIPAMENTO por MAC: não há código pra digitar — o aparelho
+              conecta sozinho quando entra na rede do ponto (login por MAC). */}
+          {order.status === "completed" && order.device_mac && (
+            <div className="mt-4 space-y-4" style={{ animation: "fadeUp .3s ease" }}>
+              <div className="flex flex-col items-center text-center">
+                <span className="flex h-14 w-14 items-center justify-center rounded-full bg-[#B4F04B]">
+                  <Check className="h-7 w-7 text-[#135B1D]" strokeWidth={3} />
+                </span>
+                <p className="mt-3 text-lg font-extrabold text-[#135B1D]">Pagamento confirmado!</p>
+                <p className="text-sm text-[#49784C]">Seu equipamento está liberado.</p>
+              </div>
+
+              <div className="rounded-2xl bg-[#135B1D] p-5 text-center">
+                <p className="text-xs font-semibold uppercase tracking-wider text-[#B7E3B2]">Equipamento liberado (MAC)</p>
+                <p className="mt-1 font-mono text-[20px] font-extrabold tracking-[1px] text-[#B4F04B]">{order.device_mac}</p>
+              </div>
+
+              <div className="rounded-2xl bg-[#E9F4E5] p-4 text-sm text-[#49784C]">
+                Conecte o equipamento (maquininha/aparelho) à rede Wi-Fi <strong className="text-[#135B1D]">Recôncavo Voucher</strong> deste ponto. Ele entra <strong className="text-[#135B1D]">sozinho</strong>, sem tela de login, em alguns instantes. Pode levar até ~5 min pra liberar na primeira vez.
+              </div>
+
+              {voucher?.expires_at && (
+                <p className="text-center text-sm text-[#6E9070]">
+                  Válido até <strong className="text-[#135B1D]">{new Date(voucher.expires_at).toLocaleString("pt-BR")}</strong>
+                </p>
+              )}
+
+              <CustomerForm order={order} />
+            </div>
+          )}
+
+          {order.status === "completed" && !order.device_mac && voucher && (
             <div className="mt-4 space-y-4" style={{ animation: "fadeUp .3s ease" }}>
               <div className="flex flex-col items-center text-center">
                 <span className="flex h-14 w-14 items-center justify-center rounded-full bg-[#B4F04B]">

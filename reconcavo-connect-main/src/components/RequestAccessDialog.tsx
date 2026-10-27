@@ -28,16 +28,23 @@ export function RequestAccessDialog({ plan, open, onOpenChange }: Props) {
   const [loading, setLoading] = useState(false);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
+  const [isDevice, setIsDevice] = useState(false); // conectar equipamento sem navegador
+  const [mac, setMac] = useState("");
 
   if (!plan) return null;
 
   const pp = parseE164(phone);
-  const valid = name.trim().length >= 2 && isValidPhone(pp.code, pp.national);
+  // MAC: aceita com/sem separador; normaliza p/ AA:BB:CC:DD:EE:FF (12 hex).
+  const macHex = mac.replace(/[^0-9a-fA-F]/g, "").toUpperCase();
+  const macValid = macHex.length === 12;
+  const macFmt = macValid ? (macHex.match(/.{2}/g) as string[]).join(":") : "";
+  const valid = name.trim().length >= 2 && isValidPhone(pp.code, pp.national) && (!isDevice || macValid);
 
   const handleSubmit = async () => {
     const nm = name.trim();
     if (nm.length < 2) return toast.error("Informe seu nome");
     if (!isValidPhone(pp.code, pp.national)) return toast.error("Informe um WhatsApp válido (com DDD/código do país)");
+    if (isDevice && !macValid) return toast.error("Informe um MAC válido (12 dígitos, ex.: AA:BB:CC:DD:EE:FF)");
     setLoading(true);
     const { data, error } = await supabase
       .from("payments")
@@ -51,6 +58,7 @@ export function RequestAccessDialog({ plan, open, onOpenChange }: Props) {
         location_id: plan.location_id,
         customer_name: nm,
         customer_phone: phone.trim(),
+        device_mac: isDevice && macValid ? macFmt : null,
       })
       .select("id")
       .single();
@@ -100,6 +108,26 @@ export function RequestAccessDialog({ plan, open, onOpenChange }: Props) {
             />
           </div>
         </div>
+
+        {/* Equipamento sem navegador (maquininha de cartão, etc.): conecta por MAC */}
+        <label className="mt-3 flex cursor-pointer items-start gap-2 text-sm text-[#152B14]">
+          <input type="checkbox" checked={isDevice} onChange={(e) => setIsDevice(e.target.checked)}
+            className="mt-0.5 h-4 w-4 accent-[#1E8A2C]" />
+          <span>Vou conectar um <strong>equipamento</strong> sem navegador (maquininha de cartão, etc.)</span>
+        </label>
+        {isDevice && (
+          <div className="mt-2 space-y-1 rounded-2xl border border-[#C9DFC0] bg-[#F4F9F1] p-3">
+            <label htmlFor="rv-mac" className="text-xs font-semibold text-[#49784C]">MAC do equipamento</label>
+            <input
+              id="rv-mac" value={mac} onChange={(e) => setMac(e.target.value)}
+              placeholder="AA:BB:CC:DD:EE:FF" autoCapitalize="characters" spellCheck={false}
+              className="min-h-[48px] w-full rounded-xl border border-[#C9DFC0] bg-white px-4 font-mono text-[16px] tracking-wide text-[#152B14] placeholder:text-[#8FB08C] focus:outline-none focus-visible:ring-[3px] focus-visible:ring-[#1E8A2C]"
+            />
+            {mac && !macValid
+              ? <p className="text-xs text-[#B4432E]">MAC inválido — precisa de 12 dígitos (0-9, A-F).</p>
+              : <p className="text-xs text-[#6E9070]">Veja o MAC nas configurações de rede/Wi-Fi do equipamento (ou na etiqueta). O aparelho vai conectar sozinho, sem tela de login.</p>}
+          </div>
+        )}
 
         <button
           onClick={handleSubmit} disabled={loading || !valid}
