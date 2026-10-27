@@ -34,6 +34,19 @@ const TONE: Record<Tone, { dot: string; text: string; bg: string; label: string 
   none: { dot: "#9AA79A", text: "#5B6B5B", bg: "#EFF2EE", label: "Sem relatório" },
 };
 
+// Tensão com faixa de cor independente do nominal (12V/24V/48V): detecta o nominal
+// mais próximo do valor lido e classifica por % dele. Assim pontos com fontes
+// diferentes usam a mesma lógica. Foco na QUEDA (subtensão); acima do nominal = ok.
+function nearestNominal(v: number): number {
+  const noms = [12, 24, 48];
+  return noms.reduce((a, b) => (Math.abs(b - v) < Math.abs(a - v) ? b : a));
+}
+function voltTone(v: number): Tone {
+  const pct = v / nearestNominal(v);
+  return pct >= 0.92 ? "ok" : pct >= 0.85 ? "warn" : "bad"; // ~8% / ~15% abaixo do nominal
+}
+const VOLT_LABEL: Record<Tone, string> = { ok: "normal", warn: "queda leve", bad: "queda acentuada", none: "sem leitura" };
+
 interface Buyer { name: string | null; phone: string | null }
 
 export default function Connected() {
@@ -156,6 +169,9 @@ export default function Connected() {
         // cor de saúde): a tensão nominal varia por ponto (12V/24V/PoE), então não
         // dá p/ classificar bom/ruim sem saber o nominal de cada local.
         const volt = h.tone === "bad" || h.tone === "none" ? null : st?.voltage;
+        const vTone: Tone = volt == null ? "none" : voltTone(volt);
+        const vt = TONE[vTone];
+        const vnom = volt == null ? null : nearestNominal(volt);
         return (
           <div key={loc.id} className="rounded-[20px] border-2 border-[#D8E9D3] bg-white p-5">
             <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
@@ -182,7 +198,8 @@ export default function Connected() {
                 )}
                 {volt != null && (
                   <span className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-semibold"
-                    style={{ background: "#EAF0F7", color: "#2C4A6E" }} title="Tensão da fonte de energia do roteador neste local">
+                    style={{ background: vt.bg, color: vt.text }}
+                    title={`Tensão da fonte (nominal ~${vnom} V) — ${VOLT_LABEL[vTone]}`}>
                     <Zap className="h-3.5 w-3.5" /> {Number(volt).toFixed(1).replace(".", ",")} V
                   </span>
                 )}
