@@ -122,13 +122,14 @@ Deno.serve(async (req) => {
     const rows = pend ?? [];
 
     // Linhas idempotentes: só adiciona quem ainda não existe no roteador.
-    // Dispositivo por MAC: senha VAZIA (casa com mac-auth-password do perfil, que
-    // fica vazio) → com login-by=mac o equipamento entra sozinho. Voucher normal:
-    // senha = o próprio código.
+    // Dispositivo por MAC: senha = "rvmac" (DEVE ser igual ao mac-auth-password do
+    // perfil hsprof1). No login-by=mac o roteador autentica username=MAC com senha =
+    // mac-auth-password; alinhar os dois faz o equipamento entrar sozinho. Voucher
+    // normal: senha = o próprio código.
     const lines = rows.map((v) => {
       const prof = v.mikrotik_profile ? ` profile=${v.mikrotik_profile}` : "";
       const lim = v.duration_minutes ? ` limit-uptime=${mkTime(v.duration_minutes)}` : "";
-      const pw = v.is_device ? `""` : v.code;
+      const pw = v.is_device ? `rvmac` : v.code;
       return `:if ([:len [/ip hotspot user find name="${v.code}"]]=0) do={/ip hotspot user add name=${v.code} password=${pw}${prof}${lim}}`;
     });
 
