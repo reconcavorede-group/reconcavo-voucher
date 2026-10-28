@@ -245,7 +245,7 @@ export default function OrderStatus() {
               </div>
 
               <div className="rounded-2xl bg-[#E9F4E5] p-4 text-sm text-[#49784C]">
-                Conecte o equipamento (maquininha/aparelho) à rede Wi-Fi <strong className="text-[#135B1D]">Recôncavo Voucher</strong> deste ponto. Ele entra <strong className="text-[#135B1D]">sozinho</strong>, sem tela de login, em alguns instantes. Pode levar até ~5 min pra liberar na primeira vez.
+                Conecte o equipamento (maquininha/aparelho) à rede Wi-Fi <strong className="text-[#135B1D]">VOUCHER_MAQUININHA</strong> (senha <strong className="text-[#135B1D]">12345678</strong>) deste ponto. Ele entra <strong className="text-[#135B1D]">sozinho</strong>, sem tela de login, em alguns instantes. Pode levar até ~5 min pra liberar na primeira vez.
               </div>
 
               {voucher?.expires_at && (

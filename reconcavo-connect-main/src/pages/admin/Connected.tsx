@@ -231,12 +231,16 @@ export default function Connected() {
                   <tbody>
                     {clients.map((c, i) => {
                       const isTrial = (c.code || "").toUpperCase().startsWith("T-");
+                      // Equipamento por MAC: o "código" é o próprio MAC (AA:BB:CC:DD:EE:FF).
+                      const isDevice = /^([0-9a-f]{2}:){5}[0-9a-f]{2}$/i.test(c.code || "");
                       const buyer = isTrial ? trials.get((c.mac || "").toUpperCase()) : buyers.get(c.code);
                       return (
                       <tr key={c.code + i} className="border-b border-[#F2F8EF] last:border-0">
                         <td className="py-2 pr-3">
                           {isTrial
                             ? <span className="inline-flex items-center rounded-full bg-[#FBF3DA] px-2.5 py-0.5 text-xs font-bold text-[#8A6D00]">Trial</span>
+                            : isDevice
+                            ? <span className="inline-flex items-center rounded-full bg-[#EAF0F7] px-2.5 py-0.5 text-xs font-bold text-[#2C4A6E]">Equipamento</span>
                             : <span className="font-mono font-semibold text-[#135B1D]">{c.code || "—"}</span>}
                         </td>
                         <td className="py-2 pr-3 font-medium text-[#152B14]">{buyer?.name || "—"}</td>

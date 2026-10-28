@@ -125,7 +125,7 @@ export function RequestAccessDialog({ plan, open, onOpenChange }: Props) {
             />
             {mac && !macValid
               ? <p className="text-xs text-[#B4432E]">MAC inválido — precisa de 12 dígitos (0-9, A-F).</p>
-              : <p className="text-xs text-[#6E9070]">Veja o MAC nas configurações de rede/Wi-Fi do equipamento (ou na etiqueta). O aparelho vai conectar sozinho, sem tela de login.</p>}
+              : <p className="text-xs text-[#6E9070]">Use o <strong>MAC do Wi-Fi</strong> do equipamento (nas configurações de <strong>Wi-Fi/rede sem fio</strong> dele — não o da rede cabeada). Depois conecte o aparelho na rede <strong>VOUCHER_MAQUININHA</strong> (senha 12345678): ele entra sozinho, sem tela de login.</p>}
           </div>
         )}
 
